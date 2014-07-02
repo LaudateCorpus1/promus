@@ -1,22 +1,18 @@
-.. promus documentation master file, created by
-   sphinx-quickstart on Wed Jul  2 16:54:26 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+####################
+Promus Documentation
+####################
 
-Welcome to promus's documentation!
-==================================
+Promus is a remote manager designed to create and manage `git
+<http://git-scm.com/>`_ repositories in a remote server without the
+need of admin privileges.
 
-Contents:
+Basic Usage
+===========
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 1
 
+    What is Promus? <promus>
+    Getting Started with Promus <start>
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
-
