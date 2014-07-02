@@ -1,0 +1,43 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{hyperref}
+
+\usepackage[margin=1in]{geometry}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{prop}{Proposition}[thm]
+\newtheorem{lemma}{Lemma}[thm]
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{cor}{Corollary}[thm]
+
+\newcommand{\p}[1]{P^{(#1)}}
+\newcommand{\x}{{\bf X}}
+\newcommand{\set}[1]{\left\{#1\right\}}
+
+\begin{document}
+
+\section{git+latex workflow}
+
+The first step in efficiently managing a git+latex workflow is to
+make a few changes to your \LaTeX habits. \\
+
+For starters, write each sentence on a separate line. Git was written
+to version control source code, where each line is distinct and has a
+specific purpose. When you write documents in \LaTeX, you often think
+in terms of paragraphs and write it as a free flowing document.
+However, in git, changes to a single word in a paragraph get recorded
+as a change to the entire paragraph. \\
+
+If you're writing a long document in latex, I'd suggest splitting
+different chapters into their own files and call them in the main
+file using the \emph{include} command. This way it is easier for you
+to edit a localized part of your work, and it is also easier for
+version control, as you know what changes have been made to each
+chapter, instead of having to figure it out from the logs of one big
+file. \\
+
+\url{http://stackoverflow.com/a/6190412/788553}
+
+
+\end{document}

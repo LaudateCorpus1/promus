@@ -1,0 +1,11 @@
+include bin/Darwin/promus-find
+include bin/Darwin/unison
+include bin/Linux/promus-find
+include bin/Linux/unison
+include MANIFEST.in
+include README.md
+include Makefile
+include promus/git/gitignore
+include promus/unison/promus-find.cpp
+include promus/paster/latex/*
+include promus/paster/python/*
