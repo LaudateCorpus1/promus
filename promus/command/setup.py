@@ -8,9 +8,7 @@ import os
 import socket
 import getpass
 import textwrap
-import promus.core.git as git
-import promus.core.util as util
-import promus.core.ssh as ssh
+import promus.core as prc
 
 DESC = """
 this command needs to be run at least once before any of the other
@@ -38,31 +36,32 @@ def add_parser(subp, raw):
 
 def configure_git(prompt, entry, default=''):
     """Ask user to set value for a git entry. """
-    val = git.config(entry)
+    val = prc.config(entry)
     if val == '':
         val = default
-    val = util.user_input(prompt, val.strip())
-    return git.config(entry, val)
+    val = prc.user_input(prompt, val.strip())
+    return prc.config(entry, val)
 
 
 def run(_):
     """Run command. """
-    util.check_promus_dependencies()
-    git.config('host.name', socket.gethostname())
+    prc.check_promus_dependencies()
+    prc.config('host.name', socket.gethostname())
     configure_git("Full name", 'user.name')
     configure_git("E-mail address", 'user.email')
     configure_git("Hostname alias", 'host.alias')
     email = configure_git("Host e-mail", 'host.email')
-    id_key, _ = ssh.get_keys()
+    id_key, _ = prc.get_keys()
     password = getpass.getpass()
+    prc.make_dir('%s/.promus' % os.environ['HOME'])
     passfile = '%s/.promus/password.pass' % os.environ['HOME']
     if password != '':
-        util.encrypt_to_file(password, passfile, id_key)
+        prc.encrypt_to_file(password, passfile, id_key)
     else:
         if not os.path.exists(passfile):
-            util.encrypt_to_file('', passfile, id_key)
+            prc.encrypt_to_file('', passfile, id_key)
     host_email = email.split(':')[0]
     [username, server] = email.split('@')
-    git.config('host.email', host_email)
-    git.config('host.username', username)
-    git.config('host.smtpserver', 'smtp.%s' % server)
+    prc.config('host.email', host_email)
+    prc.config('host.username', username)
+    prc.config('host.smtpserver', 'smtp.%s' % server)

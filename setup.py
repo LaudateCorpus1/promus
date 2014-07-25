@@ -51,6 +51,8 @@ setup(name='promus',
       install_requires=[
           'pysftp>=0.2.8',
           'rsa>=3.1.4',
+          'pycrypto>=2.6.1',
+          'ecdsa>=0.11',
           ],
       package_data={'promus.git': ['gitignore'],
                     'promus.paster': ['latex/*', 'python/*'],
