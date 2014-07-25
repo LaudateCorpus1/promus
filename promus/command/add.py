@@ -41,7 +41,6 @@ def add_host(arg):
         disp('ERROR: Private key `%s` not found\n' % arg.host)
         return
     pub_key = ssh.get_public_key(arg.host)
-    print pub_key
     _, gitkey = ssh.get_keys()
     gitkey = ssh.get_public_key(gitkey)
     host = socket.gethostname()

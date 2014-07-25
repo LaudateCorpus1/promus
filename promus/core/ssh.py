@@ -2,11 +2,11 @@
 
 import os
 import re
+import sys
 import shutil
 from os.path import exists
 from promus.command import exec_cmd, date, error
-import promus.core.git as git
-import promus.core.util as util
+PC = sys.modules['promus.core']
 
 RE_USER = re.compile('command="python -m promus greet '
                      '\'(?P<email>.*?),(?P<user>.*?),'
@@ -28,7 +28,7 @@ def make_key(name, cmt=''):
 def get_keys():
     """Verifies that the keys exist, if not it creates them. Returns
     the path of the keys. """
-    alias = git.config('host.alias')
+    alias = PC.config('host.alias')
     if alias == '':
         raise NameError("run `promus setup` to provide an alias")
     home = os.environ['HOME']
@@ -99,7 +99,7 @@ def write_config(config):
             configf.write('    %s %s\n' % (key, config[entry][key]))
         configf.write('\n')
     configf.close()
-    util.exec_cmd('chmod 700 %s/.ssh/config' % os.environ['HOME'], True)
+    exec_cmd('chmod 700 %s/.ssh/config' % os.environ['HOME'], True)
 
 
 def read_authorized_keys():
@@ -145,8 +145,7 @@ def write_authorized_keys(users, pending, unknown):
         shutil.copy(ak_file, backup)
     akfp = open(ak_file, 'w')
     akfp.write('# PROMUS: authorized_keys generated on %s\n' % date())
-    emails = users.keys()
-    emails.sort()
+    emails = sorted(users.keys())
     for user in emails:
         for key, content in users[user].items():
             akfp.write('command="python -m promus greet \'%s,' % user)
@@ -165,4 +164,4 @@ def write_authorized_keys(users, pending, unknown):
         for entry in unknown:
             akfp.write('%s' % entry)
     akfp.close()
-    util.exec_cmd('chmod 700 %s' % ak_file, True)
+    exec_cmd('chmod 700 %s' % ak_file, True)

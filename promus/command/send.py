@@ -120,7 +120,7 @@ def send_request(arg):
 
 def send_invite(arg):
     """Sends instructions on how to connect to a repository. """
-    print arg
+    pass
 
 
 def run(arg):

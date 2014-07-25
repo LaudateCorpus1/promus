@@ -12,10 +12,12 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.encoders import encode_base64
-from subprocess import Popen, PIPE
 from promus.command import error
-import promus.core.git as git
-from promus.core.ssh import get_keys
+PC = sys.modules['promus.core']
+try:
+    INPUT = raw_input
+except NameError:
+    INPUT = input
 
 
 def is_exe(fpath):
@@ -62,52 +64,39 @@ def check_promus_dependencies():
         error(msg % missing)
 
 
-def exec_cmd(cmd, verbose=False):
-    "Run a subprocess and return its output and errors. "
-    if verbose:
-        out = sys.stdout
-        err = sys.stderr
-    else:
-        out = PIPE
-        err = PIPE
-    process = Popen(cmd, shell=True, stdout=out, stderr=err)
-    out, err = process.communicate()
-    return out, err, process.returncode
-
-
 def user_input(prompt, default):
     "Get an input given a default value. "
     if default != '':
-        newval = raw_input("%s [%s]: " % (prompt, default))
+        newval = INPUT("%s [%s]: " % (prompt, default))
         if newval == '':
             newval = default
     else:
         newval = default
         while newval == '':
-            newval = raw_input("%s: " % prompt)
+            newval = INPUT("%s: " % prompt)
     return newval.strip()
 
 
 def encrypt_to_file(msg, fname, keyfile):
     """Encrypt msg to file `fname` using the key given by the path
     `keyfile`."""
-    with open(keyfile, 'r') as keyfp:
+    with open(keyfile, 'rb') as keyfp:
         keydata = keyfp.read()
     key = rsa.PrivateKey.load_pkcs1(keydata)
-    msg = rsa.encrypt(msg, key)
-    with open(fname, 'w') as msgfp:
+    msg = rsa.encrypt(msg.encode('utf-8'), key)
+    with open(fname, 'wb') as msgfp:
         msgfp.write(msg)
 
 
 def decrypt_from_file(fname, keyfile):
     """Decrypt a message in the file `fname` using the key given by
     the path `keyfile`"""
-    with open(keyfile, 'r') as keyfp:
+    with open(keyfile, 'rb') as keyfp:
         keydata = keyfp.read()
     key = rsa.PrivateKey.load_pkcs1(keydata)
-    with open(fname, 'r') as msgfp:
+    with open(fname, 'rb') as msgfp:
         msg = msgfp.read()
-    return rsa.decrypt(msg, key)
+    return rsa.decrypt(msg, key).decode('utf-8')
 
 
 def wrap_msg(msg, width=70, tab=1):
@@ -183,15 +172,15 @@ def send_mail(send_to, subject, text, html, files=None):
                         'attachment; filename="%s"' % basename(file_))
         htmlmsg.attach(part)
     msg.attach(htmlmsg)
-    server = git.config('host.smtpserver')
+    server = PC.config('host.smtpserver')
     conn = SMTP(server)
     conn.set_debuglevel(False)
-    id_key, _ = get_keys()
+    id_key, _ = PC.get_keys()
     passfile = '%s/.promus/password.pass' % os.environ['HOME']
     password = decrypt_from_file(passfile, id_key)
     if password:
-        conn.login(git.config('host.username'), password)
+        conn.login(PC.config('host.username'), password)
     try:
-        conn.sendmail(git.config('host.email'), send_to, msg.as_string())
+        conn.sendmail(PC.config('host.email'), send_to, msg.as_string())
     finally:
         conn.close()

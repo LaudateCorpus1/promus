@@ -5,6 +5,51 @@ behave as well as other utility functions.
 
 """
 
+from promus.core.ssh import (
+    make_key,
+    get_keys,
+    get_public_key,
+    read_config,
+    write_config,
+    read_authorized_keys,
+    write_authorized_keys,
+)
+from promus.core.git import (
+    config,
+    describe,
+    repo_name,
+    local_path,
+    remote_path,
+    make_hook,
+    init,
+    parse_dir,
+    parse_acl,
+    check_acl,
+    read_acl,
+    parse_profile,
+    check_profile,
+    read_profile,
+    file_in_path,
+    has_access,
+    file_match,
+    clone,
+)
+from promus.core.util import (
+    is_exe,
+    external_executables,
+    check_promus_dependencies,
+    user_input,
+    encrypt_to_file,
+    decrypt_from_file,
+    wrap_msg,
+    make_dir,
+    parse_list,
+    tokenizer,
+    merge_lines,
+    strip,
+    send_mail,
+)
+
 import socket
 
 # pylint: disable=R0902

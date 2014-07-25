@@ -51,8 +51,7 @@ def show_users():
     users, pending, unknown = ssh.read_authorized_keys()
     disp = sys.stdout.write
     disp('\n')
-    emails = users.keys()
-    emails.sort()
+    emails = sorted(users.keys())
     for user in emails:
         disp('  %s:\n' % user)
         for key, content in users[user].items():

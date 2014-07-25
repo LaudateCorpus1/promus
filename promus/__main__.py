@@ -37,19 +37,19 @@ more info:
   http://promus.readthedocs.org
 
 version:
-  promus version %s
+  promus %s
 
 """ % VERSION
     raw = argparse.RawDescriptionHelpFormatter
-    argp = argparse.ArgumentParser(formatter_class=raw, version=ver,
+    argp = argparse.ArgumentParser(formatter_class=raw,
                                    description=textwrap.dedent(desc),
                                    epilog=textwrap.dedent(epi))
+    argp.add_argument('-v', '--version', action='version', version=ver)
     subp = argp.add_subparsers(title='subcommands',
                                dest='parser_name',
                                help='additional help',
                                metavar="<command>")
-    names = mod.keys()
-    names.sort()
+    names = sorted(mod.keys())
     for name in names:
         mod[name].add_parser(subp, raw)
     try:
