@@ -6,6 +6,7 @@ import shutil
 from os.path import exists
 from promus.command import exec_cmd, date, error
 import promus.core.git as git
+import promus.core.util as util
 
 RE_USER = re.compile('command="python -m promus greet '
                      '\'(?P<email>.*?),(?P<user>.*?),'
@@ -98,7 +99,7 @@ def write_config(config):
             configf.write('    %s %s\n' % (key, config[entry][key]))
         configf.write('\n')
     configf.close()
-    os.chmod('%s/.ssh/config' % os.environ['HOME'], 0700)
+    util.exec_cmd('chmod 700 %s/.ssh/config' % os.environ['HOME'], True)
 
 
 def read_authorized_keys():
@@ -164,4 +165,4 @@ def write_authorized_keys(users, pending, unknown):
         for entry in unknown:
             akfp.write('%s' % entry)
     akfp.close()
-    os.chmod(ak_file, 0700)
+    util.exec_cmd('chmod 700 %s' % ak_file, True)

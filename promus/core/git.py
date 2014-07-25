@@ -296,6 +296,7 @@ def clone(prs, repo):
     prs.dismiss("CLONE>> Repository '%s' has been cloned..." % repo, 0)
 
 
+"""
 def admin_setup(prs, repo):
     "Set the acl list and create the hooks. "
     print "Setting up empty repository..."
@@ -368,3 +369,4 @@ def user_setup(prs, repo):
         print "  %s" % hook
         path = '%s/.git/hooks' % repo
         make_hook(hook, path)
+"""

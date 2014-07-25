@@ -22,7 +22,7 @@ key.
 
 def add_parser(subp, raw):
     "Add a parser to the main subparser. "
-    tmpp = subp.add_parser('add', help='add a host or user',
+    tmpp = subp.add_parser('add', help='add a host',
                            formatter_class=raw,
                            description=textwrap.dedent(DESC))
     tmpp.add_argument('type', type=str, metavar='TYPE',
@@ -36,7 +36,7 @@ def add_host(arg):
     """Display your public key and your git key. """
     disp = sys.stdout.write
     try:
-        os.chmod(arg.host, 0700)
+        util.exec_cmd('chmod 700 %s' % arg.host, True)
     except OSError:
         disp('ERROR: Private key `%s` not found\n' % arg.host)
         return

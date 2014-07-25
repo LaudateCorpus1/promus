@@ -17,3 +17,6 @@ develop:
 clean:
 	rm -rf promus.egg-info
 	rm -rf build
+
+pypi:
+	python setup.py sdist upload
