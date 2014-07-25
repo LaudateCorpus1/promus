@@ -10,9 +10,8 @@ Basic Usage
 ===========
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     What is Promus? <promus>
+    Installation <installation>
     Getting Started with Promus <start>
-
-* :ref:`search`

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 """
 promus: Command Line Script
 ===========================
@@ -12,7 +13,5 @@ Copyright 2013 Jose Manuel Lopez
 """
 
 if __name__ == '__main__':
-    import promus
     from promus.__main__ import run
-    PRS = promus.Promus(__file__)
-    run(PRS)
+    run()

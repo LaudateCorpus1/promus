@@ -1,4 +1,4 @@
-""" promus version
+"""promus version
 
 version_info conforms to PEP 386
 
@@ -8,7 +8,7 @@ version_info conforms to PEP 386
 
 """
 
-VERSION_INFO = (0, 6, 0, 'beta', 6)
+VERSION_INFO = (0, 7, 0, 'beta', 0)
 
 
 def get_version():

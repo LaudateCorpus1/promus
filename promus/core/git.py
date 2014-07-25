@@ -1,27 +1,22 @@
 """Git utility"""
 
 import sys
+from promus.command import exec_cmd
 from os import remove, environ, uname
 from os.path import dirname, exists, split, basename
 from fnmatch import fnmatch
-import promus.util as util
 
 
-def gconfig(entry, val=None):
-    """Call `git config --global` to set or get an entry. """
+def config(entry, val=None, global_setting=True):
+    """Call `git config --global` when `global_setting` is set to
+    True, otherwise call `git config` to set or get an entry. """
+    cmd = 'git config '
+    if global_setting:
+        cmd += '--global '
     if val:
-        util.exec_cmd('git config --global %s "%s"' % (entry, val))
+        exec_cmd('%s %s "%s"' % (cmd, entry, val))
     else:
-        val, _, _ = util.exec_cmd('git config --global %s' % entry)
-    return val.strip()
-
-
-def config(entry, val=None):
-    """Call `git config` to set or get an entry. """
-    if val:
-        util.exec_cmd('git config %s "%s"' % (entry, val))
-    else:
-        val, _, _ = util.exec_cmd('git config %s' % entry)
+        val, _, _ = exec_cmd('%s %s' % (cmd, entry))
     return val.strip()
 
 
@@ -72,7 +67,7 @@ def make_hook(hook, path):
               '    PRS = Promus(__file__)\n' \
               '    %s.run(PRS)\n' \
               '    PRS.dismiss("%s-HOOK>> done...", 0)' \
-              '\n' % (hook, util.date(), hookpy, 
+              '\n' % (hook, util.date(), hookpy,
                       hookpy, hookpy, hook.upper())
     with open(hook_file, 'w') as hookfp:
         hookfp.write(content)
@@ -234,7 +229,7 @@ def read_profile(user, git_dir=None):
     profile, err, _ = util.exec_cmd(cmd, False)
     if err:
         return "while executing `git show HEAD:.%s.profile`: %s" % (user,
-                                                                   err[:-1])
+                                                                    err[:-1])
     return parse_profile(profile)
 
 
@@ -311,7 +306,7 @@ def admin_setup(prs, repo):
     with open('%s/.acl' % repo, 'w') as tmpf:
         tmpf.write('admin : %s\n' % prs.master)
         tmpf.write('user  : \n')
-    
+
     print "creating .%s.profile" % prs.master
     email, _, _ = util.exec_cmd('git config user.email')
     with open('%s/.%s.profile' % (repo, prs.master), 'w') as tmpf:

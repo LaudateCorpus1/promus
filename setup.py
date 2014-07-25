@@ -1,20 +1,23 @@
-"""SETUP SCRIPT"""
+"""promus setup script"""
 
-import sys
-import site
-from os import uname, environ
-from os.path import join, dirname, exists
-from setuptools import find_packages, setup
-from promus.__version__ import VERSION, VERSION_INFO
-from promus.unison import has_unison
+import imp
+import os.path as pt
+from setuptools import setup
 
 
-DESCRIPTION = "Remote manager to handle commands based on public keys."
+def get_version():
+    "Get version & version_info without importing promus.__init__ "
+    path = pt.join(pt.dirname(__file__), 'promus', '__version__.py')
+    mod = imp.load_source('promus_version', path)
+    return mod.VERSION, mod.VERSION_INFO
+
+VERSION, VERSION_INFO = get_version()
+
+DESCRIPTION = "Remote manager to handle git commands."
 LONG_DESCRIPTION = """
-Promus is a remote manager designed to create and manage Git
-repositories. It does so by executing `git` and `unison` commands on
-behalf of a user who has been given authorization via an ssh public
-key.
+Promus is a remote manager designed to create and manage `git`
+repositories in a remote server without the need of administrator
+privileges.
 """
 
 DEV_STATUS_MAP = {
@@ -27,26 +30,29 @@ if VERSION_INFO[3] == 'alpha' and VERSION_INFO[4] == 0:
     DEVSTATUS = '2 - Pre-Alpha'
 else:
     DEVSTATUS = DEV_STATUS_MAP[VERSION_INFO[3]]
-PLATFORM = uname()[0]
-SCRIPTS = ['bin/promus', 'bin/%s/promus-find' % PLATFORM]
-if not has_unison():
-    SCRIPTS.append('bin/%s/unison' % PLATFORM)
 
 
 setup(name='promus',
       version=VERSION,
-      description=DESCRIPTION.strip(),
+      description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
-      keywords='ssh git unison promus collaborate access',
+      keywords='ssh git transfer files collaborate access',
       author='Manuel Lopez',
       author_email='jmlopez.rod@gmail.com',
-      url='http://math.uh.edu/~jmlopez/promus',
+      url='http://promus.readthedocs.org',
       license='BSD License',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=[
+          'promus',
+          'promus.command',
+          'promus.core',
+          ],
       platforms=['Darwin', 'Linux'],
-      scripts=SCRIPTS,
+      scripts=['bin/promus'],
+      install_requires=[
+          'pysftp>=0.2.8',
+          'rsa>=3.1.4',
+          ],
       package_data={'promus.git': ['gitignore'],
-                    'promus.unison': ['promus-find.cpp'],
                     'promus.paster': ['latex/*', 'python/*'],
                     },
       include_package_data=True,
