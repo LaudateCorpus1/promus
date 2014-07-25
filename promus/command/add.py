@@ -34,9 +34,8 @@ def add_parser(subp, raw):
 def add_host(arg):
     """Display your public key and your git key. """
     disp = sys.stdout.write
-    try:
-        exec_cmd('chmod 700 %s' % arg.host, True)
-    except OSError:
+    _, _, code = exec_cmd('chmod 700 %s' % arg.host)
+    if code != 0:
         disp('ERROR: Private key `%s` not found\n' % arg.host)
         return
     pub_key = prc.get_public_key(arg.host)
