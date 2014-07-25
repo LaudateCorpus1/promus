@@ -15,7 +15,7 @@ from email.encoders import encode_base64
 from subprocess import Popen, PIPE
 from promus.command import error
 import promus.core.git as git
-import promus.core.ssh as ssh
+from promus.core.ssh import get_keys
 
 
 def is_exe(fpath):
@@ -186,7 +186,7 @@ def send_mail(send_to, subject, text, html, files=None):
     server = git.config('host.smtpserver')
     conn = SMTP(server)
     conn.set_debuglevel(False)
-    id_key, _ = ssh.get_keys()
+    id_key, _ = get_keys()
     passfile = '%s/.promus/password.pass' % os.environ['HOME']
     password = decrypt_from_file(passfile, id_key)
     if password:
