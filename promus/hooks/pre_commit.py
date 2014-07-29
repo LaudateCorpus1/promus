@@ -33,8 +33,8 @@ commit message.
 
 """
 
-import promus.util as util
-import promus.git as git
+from promus.command import exec_cmd
+import promus.core as prc
 
 
 ADMIN_FILES = ['.acl', '.description', '.bashrc', '.gitignore']
@@ -51,8 +51,8 @@ def check_names(acl, user, mod_file):
     "Checks mod_file against the acl names. "
     has_access = None
     for names, users in zip_list(acl, 'name'):
-        if git.file_match(mod_file, names):
-            has_access = git.has_access(user, users)
+        if prc.file_match(mod_file, names):
+            has_access = prc.has_access(user, users)
             break
     return has_access
 
@@ -61,18 +61,18 @@ def check_paths(acl, user, mod_file):
     "Checks mod_file against the acl paths. "
     has_access = None
     for paths, users in zip_list(acl, 'path'):
-        if git.file_in_path(mod_file, paths):
-            has_access = git.has_access(user, users)
+        if prc.file_in_path(mod_file, paths):
+            has_access = prc.has_access(user, users)
             break
     return has_access
 
 
 def run(prs):
     """Function to execute when the pre-commit hook is called. """
-    acl = git.read_acl(git.local_path())
+    acl = prc.read_acl(prc.local_path())
     if isinstance(acl, str):
         prs.dismiss("PRE-COMMIT>> Skipping due to acl error: %s" % acl, 0)
-    out, _, _ = util.exec_cmd("git diff-index --cached --name-only HEAD")
+    out, _, _ = exec_cmd("git diff-index --cached --name-only HEAD")
     user = prs.master
     user_files = ['.%s.profile' % usr for usr in acl['user']]
     for mod_file in out.split('\n'):
@@ -81,7 +81,7 @@ def run(prs):
         if mod_file in ADMIN_FILES:
             if user in acl['admin']:
                 if mod_file == '.acl':
-                    tmp = git.check_acl("%s/.acl" % git.local_path())
+                    tmp = prc.check_acl("%s/.acl" % prc.local_path())
                     if isinstance(tmp, str):
                         prs.dismiss("PRE-COMMIT>> acl error: %s" % tmp, 1)
                 continue
@@ -89,7 +89,7 @@ def run(prs):
                 prs.dismiss(MSG_ADMIN % mod_file, 1)
         if mod_file in user_files:
             if mod_file == '.%s.profile' % user or user in acl['admin']:
-                tmp = git.check_profile("%s/.%s.profile" % (git.local_path(),
+                tmp = prc.check_profile("%s/.%s.profile" % (prc.local_path(),
                                                             user))
                 if isinstance(tmp, str):
                     prs.dismiss("PRE-COMMIT>> profile error: %s" % tmp, 1)

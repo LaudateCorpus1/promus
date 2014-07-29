@@ -19,14 +19,12 @@ outcome of git commit.
 
 """
 
-import promus.util as util
-import promus.git as git
-
 # A few git commands:
 #
 #   git push origin master:master && git push
 #   git push origin --tags
 
-def run(prs):
+
+def run(_):
     """Function to execute when the post-commit hook is called. """
     pass

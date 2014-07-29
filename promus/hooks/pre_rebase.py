@@ -12,10 +12,7 @@ It currently does nothing.
 
 """
 
-import promus.util as util
-import promus.git as git
 
-
-def run(prs):
+def run(_):
     """Function to execute when the pre-rebase hook is called. """
     pass

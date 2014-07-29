@@ -1,7 +1,8 @@
 recursive-include docs *
+recursive-include promus *.py
 include MANIFEST.in
 include README.rst
 include Makefile
-include promus/git/gitignore
+include promus/paster/gitignore
 include promus/paster/latex/*
 include promus/paster/python/*

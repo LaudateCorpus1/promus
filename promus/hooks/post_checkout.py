@@ -30,10 +30,7 @@ working dir metadata properties.
 
 """
 
-import promus.util as util
-import promus.git as git
 
-
-def run(prs):
+def run(_):
     """Function to execute when the post-checkout hook is called. """
     pass

@@ -25,10 +25,7 @@ contrib/hooks/setgitperms.perl for an example of how to do this.
 
 """
 
-import promus.util as util
-import promus.git as git
 
-
-def run(prs):
+def run(_):
     """Function to execute when the post-merge hook is called. """
     pass

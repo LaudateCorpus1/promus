@@ -33,8 +33,6 @@ The default `commit-msg` hook, when enabled, detects duplicate
 
 import sys
 from textwrap import TextWrapper
-import promus.util as util
-import promus.git as git
 
 
 def error(prs, msg):
@@ -42,7 +40,7 @@ def error(prs, msg):
     prs.dismiss("COMMIT_MSG-ERROR>> %s" % msg, 1)
 
 
-def get_msg_info(prs, commit_msg_file):
+def get_msg_info_strict(prs, commit_msg_file):
     """Read the file COMMITMSG provided by git and extract the title
     and description of the commit message. It exists with 1 if it
     does not find one. """
@@ -66,6 +64,27 @@ def get_msg_info(prs, commit_msg_file):
     description = '\n'.join(lines[1:]).strip()
     if description == '':
         error(prs, "No description found in commit msg.")
+    return title, description
+
+
+def get_msg_info(prs, commit_msg_file):
+    """Read the file COMMITMSG provided by git and extract the title
+    and description of the commit message. It exists with 1 if it
+    does not find one. """
+    with open(commit_msg_file, 'r') as msgf:
+        msg = msgf.read()
+    lines = [line for line in msg.split('\n') if line and line[0] != '#']
+    if len(lines) == 1:
+        tmp = lines[0].split("|")
+        if len(tmp) == 2:
+            return tmp[0], tmp[1]
+        if len(tmp) == 3:
+            return '|'.join(tmp[0:2]), tmp[2]
+        return tmp[0], ''
+    if len(lines) < 2:
+        error(prs, "No commit msg found.")
+    title = lines[0].strip()
+    description = '\n'.join(lines[1:]).strip()
     return title, description
 
 

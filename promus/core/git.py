@@ -295,7 +295,7 @@ def clone(repo):
         user_setup(repo)
     if os.uname()[0] == 'Darwin':
         exec_cmd('open -a /Applications/GitHub.app "%s"' % repo, True)
-    sys.stderr.write("CLONE>> Repository '%s' has been cloned..." % repo)
+    sys.stderr.write("CLONE>> Repository '%s' has been cloned ...\n" % repo)
 
 
 def admin_setup(repo):
@@ -303,6 +303,7 @@ def admin_setup(repo):
     print("Setting up empty repository...")
     print("creating README.md")
     master = os.environ['USER']
+    email = config('user.email').strip()
     exec_cmd("touch %s/README.rst" % repo, True)
 
     print("creating .acl")
@@ -310,10 +311,9 @@ def admin_setup(repo):
         tmpf.write('admin : %s\n' % master)
         tmpf.write('user  : \n')
 
-    print("creating .%s.profile" % master)
-    email = config('user.email')
-    with open('%s/.%s.profile' % (repo, master), 'w') as tmpf:
-        tmpf.write('email: %s\n' % email.strip())
+    print("creating .%s.profile" % email)
+    with open('%s/.%s.profile' % (repo, email), 'w') as tmpf:
+        tmpf.write('email: %s\n' % email)
         tmpf.write('notify: all\n')
         tmpf.write('track-files: \n')
 
@@ -328,7 +328,7 @@ def admin_setup(repo):
 
     print("creating .bashrc")
     with open('%s/.bashrc' % repo, 'w') as tmpf:
-        tmpf.write('#Bash commands related to %s\n' % repo)
+        tmpf.write('# Bash commands related to %s\n' % repo)
 
     print("creating hooks:")
     hooks = ['commit-msg', 'post-checkout', 'post-commit', 'post-merge',
@@ -339,9 +339,9 @@ def admin_setup(repo):
         path = '%s/.git/hooks' % repo
         make_hook(hook, path)
 
-    print("copying gitignore\n")
+    print("copying .gitignore\n")
     tmp = dirname(__file__)
-    exec_cmd('cp %s/gitignore %s/.gitignore' % (tmp, repo), True)
+    exec_cmd('cp %s/../paster/gitignore.txt %s/.gitignore' % (tmp, repo), True)
 
 
 def user_setup(repo):
