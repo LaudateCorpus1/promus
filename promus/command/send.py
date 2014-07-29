@@ -6,6 +6,7 @@ a particular repository.
 """
 
 import os
+import sys
 import socket
 import textwrap
 import promus.core.ssh as ssh
@@ -116,6 +117,7 @@ def send_request(arg):
                                        master=mastername, host=host),
                    [key])
     os.remove(key)
+    sys.stdout.write('done...\n')
 
 
 def send_invite(arg):

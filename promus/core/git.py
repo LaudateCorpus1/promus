@@ -4,7 +4,7 @@ import os
 import sys
 from os.path import dirname, exists, split, basename
 from fnmatch import fnmatch
-from promus.command import exec_cmd
+from promus.command import exec_cmd, error
 PC = sys.modules['promus.core']
 
 
@@ -63,7 +63,7 @@ def init(repo, directory=None):
     PC.make_dir(directory)
     fullpath = '%s/%s' % (directory, repo)
     if os.path.exists(fullpath):
-        error("INIT-ERROR>> Existing repository: '%s'" % fullpath)
+        error("INIT-ERROR>> Existing repository: '%s'\n" % fullpath)
     exec_cmd("git init --bare %s" % fullpath, True)
     hooks = ['post-receive', 'update']
     for hook in hooks:

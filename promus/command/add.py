@@ -33,10 +33,9 @@ def add_parser(subp, raw):
 
 def add_host(arg):
     """Display your public key and your git key. """
-    disp = sys.stdout.write
     _, _, code = exec_cmd('chmod 700 %s' % arg.host)
     if code != 0:
-        disp('ERROR: Private key `%s` not found\n' % arg.host)
+        sys.stderr.write('ERROR: Private key `%s` not found\n' % arg.host)
         return
     pub_key = prc.get_public_key(arg.host)
     _, gitkey = prc.get_keys()
@@ -51,6 +50,7 @@ def add_host(arg):
     cmd = cmd.format(host=arg.host, gitkey=gitkey, email=email,
                      master=master, name=master_name, hostname=host,
                      alias=alias, pub=pub_key[-20:])
+    sys.stderr.write('Contacting %s ... \n' % arg.host)
     exec_cmd(cmd, True)
     os.remove(arg.host)
     config = prc.read_config()
@@ -58,7 +58,7 @@ def add_host(arg):
     for entry in config:
         if arg.host.replace('@', '-') in entry.split():
             found = True
-            disp('Existing entry: `Host %s`\n' % entry)
+            sys.stderr.write('Existing entry: `Host %s`\n' % entry)
             break
     if not found:
         _, gitkey = prc.get_keys()
@@ -69,6 +69,7 @@ def add_host(arg):
         config[entry]['User'] = user
         config[entry]['IdentityFile'] = gitkey
         prc.write_config(config)
+    sys.stderr.write('done...\n')
 
 
 EMAIL_TXT = """Hello {name},
@@ -94,6 +95,7 @@ def add_user(_):
     # useremail = arg.host
     info = os.environ['SSH_ORIGINAL_COMMAND']
     pub, key, email, user, username, host, alias = info.split(',')
+    sys.stdout.write('Welcome %s, please wait...\n' % username)
     users, pending, unknown = prc.read_authorized_keys()
     # Remove access from private key
     for entry in pending:
@@ -111,8 +113,7 @@ def add_user(_):
                '%s@%s' % (user, host)]
     users[email][key_val] = content
     prc.write_authorized_keys(users, pending, unknown)
-    # if useremail != email:
-    # Needs to modify message if the emails do not match
+    sys.stderr.write('Connection successful ...\n')
     prc.send_mail([email, prc.config('host.email')],
                   'Connection successful',
                   EMAIL_TXT.format(name=username,
