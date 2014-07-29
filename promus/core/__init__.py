@@ -72,6 +72,8 @@ class Promus(object):
         # Guest information
         self.guest = None
         self.guest_name = None
+        self.guest_email = None
+        self.guest_alias = None
         self.cmd = None
         self.cmd_token = None
         self.cmd_name = None
@@ -123,13 +125,13 @@ class Promus(object):
         self.cmd_token = self.cmd.split()
         self.cmd_name = self.cmd_token[0]
 
-    def greet(self, guest, guest_name):
+    def greet(self, info):
         "Handle the guest request. "
-        self.log("GREET>> Connected as %s" % guest)
-        self.guest = guest
-        self.guest_name = guest_name
+        [self.guest_email, self.guest,
+         self.guest_name, self.guest_alias] = info.split(',')
+        self.log("GREET>> Connected as %s" % self.guest_email)
         self._get_cmd()
-        if self.guest == self.master:
+        if self.guest_email == self.master_email:
             self.exec_cmd(self.cmd, True)
         else:
             self.execute(self.cmd_name)

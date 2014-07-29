@@ -1,5 +1,5 @@
 """Git utility"""
-
+from __future__ import print_function
 import os
 import sys
 from os.path import dirname, exists, split, basename
@@ -37,19 +37,19 @@ def repo_name(local=True):
     else:
         cmd = 'basename `pwd`'
     out, _, _ = exec_cmd(cmd)
-    return util.strip(out)
+    return PC.strip(out)
 
 
 def local_path():
     "Return the path to directory containing the `.git` directory. "
-    out, _, _ = util.exec_cmd('git rev-parse --show-toplevel')
-    return util.strip(out)
+    out, _, _ = exec_cmd('git rev-parse --show-toplevel')
+    return PC.strip(out)
 
 
 def remote_path():
     "Return the path of the remote repository. "
-    out, _, _ = util.exec_cmd('git config --get remote.origin.url')
-    return util.strip(out)
+    out, _, _ = exec_cmd('git config --get remote.origin.url')
+    return PC.strip(out)
 
 
 def init(repo, directory=None):
@@ -89,7 +89,7 @@ def make_hook(hook, path):
     "Creates the specified hook. "
     hook_file = "%s/%s" % (path, hook)
     if exists(hook_file):
-        cmd = "mv %s %s.%s" % (hook_file, hook_file, util.date(True))
+        cmd = "mv %s %s.%s" % (hook_file, hook_file, PC.date(True))
         exec_cmd(cmd, True)
     hookpy = hook.replace('-', '_')
     content = HOOK_TEMPLATE.format(hook=hook, hookpy=hookpy,
@@ -102,7 +102,7 @@ def make_hook(hook, path):
 def parse_dir(string):
     "Return two lists, one with directories and one with users. "
     tmp = string.split('|')
-    return [util.parse_list(tmp[0]), util.parse_list(tmp[1])]
+    return [PC.parse_list(tmp[0]), PC.parse_list(tmp[1])]
 
 
 def parse_acl(aclstring):
@@ -140,14 +140,14 @@ def parse_acl(aclstring):
         except ValueError:
             return "wrong number of ':' in line %d" % line_num
         if key in ['admin', 'user']:
-            acl[key].extend(util.parse_list(val))
+            acl[key].extend(PC.parse_list(val))
         elif key in ['path', 'name']:
             try:
                 acl[key].extend(parse_dir(val))
             except IndexError:
                 return "'|' not found in line %d" % line_num
         elif key == 'rsync':
-            acl[key].extend(util.parse_list(val))
+            acl[key].extend(PC.parse_list(val))
         elif line.strip() != '':
             return "wrong keyword in line %d" % line_num
     acl['user'] = list(set(acl['user']+acl['admin']))
@@ -169,7 +169,7 @@ def read_acl(git_dir=None):
         cmd = 'cd %s; git show HEAD:.acl' % git_dir
     else:
         cmd = 'git show HEAD:.acl'
-    aclfile, err, _ = util.exec_cmd(cmd, False)
+    aclfile, err, _ = exec_cmd(cmd, False)
     if err:
         return "while executing `git show HEAD:.acl`: %s" % err[:-1]
     return parse_acl(aclfile)
@@ -211,7 +211,7 @@ def parse_profile(profilestring):
             else:
                 return "Notify options allowed: all/false/track"
         elif key == 'track-files':
-            profile[key].extend(util.parse_list(val))
+            profile[key].extend(PC.parse_list(val))
         elif line.strip() != '':
             return "wrong keyword in line %d" % line_num
     return profile
@@ -232,7 +232,7 @@ def read_profile(user, git_dir=None):
         cmd = 'cd %s; git show HEAD:.%s.profile' % (git_dir, user)
     else:
         cmd = 'git show HEAD:.%s.profile' % user
-    profile, err, _ = util.exec_cmd(cmd, False)
+    profile, err, _ = exec_cmd(cmd, False)
     if err:
         return "while executing `git show HEAD:.%s.profile`: %s" % (user,
                                                                     err[:-1])
@@ -278,101 +278,95 @@ def file_match(file_name, names):
     return False
 
 
-def clone(prs, repo):
+def clone(repo):
     "Clone a repository. "
-    out, err, stat = prs.exec_cmd("git clone %s" % repo)
+    out, err, stat = exec_cmd("git clone %s" % repo)
     sys.stdout.write(out)
     if stat != 0:
-        if err.startswith('[PROMUS]:'):
-            sys.stderr.write(err)
-            exit(stat)
-        err = err[:-1]
-        prs.dismiss("CLONE-ERROR>> %s" % err, stat)
+        error(err)
     if repo[-1] == '/':
         tmp = split(repo[0:-1])
     else:
         tmp = split(repo)
     repo = tmp[1].split('.')[0]
     if not exists("%s/.acl" % repo):
-        admin_setup(prs, repo)
+        admin_setup(repo)
     else:
-        user_setup(prs, repo)
+        user_setup(repo)
     if os.uname()[0] == 'Darwin':
-        util.exec_cmd('open -a /Applications/GitHub.app "%s"' % repo, True)
-    prs.dismiss("CLONE>> Repository '%s' has been cloned..." % repo, 0)
+        exec_cmd('open -a /Applications/GitHub.app "%s"' % repo, True)
+    sys.stderr.write("CLONE>> Repository '%s' has been cloned..." % repo)
 
 
-"""
-def admin_setup(prs, repo):
+def admin_setup(repo):
     "Set the acl list and create the hooks. "
-    print "Setting up empty repository..."
-    print "creating README.md"
-    util.exec_cmd("touch %s/README.md" % repo, True)
+    print("Setting up empty repository...")
+    print("creating README.md")
+    master = os.environ['USER']
+    exec_cmd("touch %s/README.rst" % repo, True)
 
-    print "creating .acl"
+    print("creating .acl")
     with open('%s/.acl' % repo, 'w') as tmpf:
-        tmpf.write('admin : %s\n' % prs.master)
+        tmpf.write('admin : %s\n' % master)
         tmpf.write('user  : \n')
 
-    print "creating .%s.profile" % prs.master
-    email, _, _ = util.exec_cmd('git config user.email')
-    with open('%s/.%s.profile' % (repo, prs.master), 'w') as tmpf:
+    print("creating .%s.profile" % master)
+    email = config('user.email')
+    with open('%s/.%s.profile' % (repo, master), 'w') as tmpf:
         tmpf.write('email: %s\n' % email.strip())
         tmpf.write('notify: all\n')
         tmpf.write('track-files: \n')
 
-    print "creating .description"
+    print("creating .description")
     with open('%s/.description' % repo, 'w') as tmpf:
         tmpf.write('%s description goes here\n' % repo)
     try:
         os.remove('%s/.git/description' % repo)
     except OSError:
         pass
-    util.exec_cmd('ln -s ../.description %s/.git/description' % repo, True)
+    exec_cmd('ln -s ../.description %s/.git/description' % repo, True)
 
-    print "creating .bashrc"
+    print("creating .bashrc")
     with open('%s/.bashrc' % repo, 'w') as tmpf:
         tmpf.write('#Bash commands related to %s\n' % repo)
 
-    print "creating hooks:"
+    print("creating hooks:")
     hooks = ['commit-msg', 'post-checkout', 'post-commit', 'post-merge',
              'pre-commit', 'pre-rebase',
              'prepare-commit-msg']
     for hook in hooks:
-        print "  %s" % hook
+        print("  %s" % hook)
         path = '%s/.git/hooks' % repo
         make_hook(hook, path)
 
-    print "copying gitignore\n"
+    print("copying gitignore\n")
     tmp = dirname(__file__)
-    util.exec_cmd('cp %s/gitignore %s/.gitignore' % (tmp, repo), True)
+    exec_cmd('cp %s/gitignore %s/.gitignore' % (tmp, repo), True)
 
 
-def user_setup(prs, repo):
+def user_setup(repo):
     "Create the user profile"
-    print "Setting up repository..."
-    print "linking .description..."
+    print("Setting up repository...")
+    print("linking .description...")
+    email = config('user.email').strip()
     try:
         os.remove('%s/.git/description' % repo)
     except OSError:
         pass
-    util.exec_cmd('ln -s ../.description %s/.git/description' % repo, True)
+    exec_cmd('ln -s ../.description %s/.git/description' % repo, True)
 
-    user_profile = '%s/.%s.profile' % (repo, prs.master)
+    user_profile = '%s/.%s.profile' % (repo, email)
     if not exists(user_profile):
-        print "creating .%s.profile" % prs.master
-        email, _, _ = util.exec_cmd('git config user.email')
+        print("creating .%s.profile" % email)
         with open(user_profile, 'w') as tmpf:
-            tmpf.write('email: %s\n' % email.strip())
+            tmpf.write('email: %s\n' % email)
             tmpf.write('notify: all\n')
             tmpf.write('track-files: \n')
 
-    print "creating hooks:"
+    print("creating hooks:")
     hooks = ['commit-msg', 'post-checkout', 'post-commit', 'post-merge',
-             'pre-commit', 'pre-rebase',
-             'prepare-commit-msg']
+             'pre-commit', 'pre-rebase', 'prepare-commit-msg']
     for hook in hooks:
-        print "  %s" % hook
+        print("  %s" % hook)
         path = '%s/.git/hooks' % repo
         make_hook(hook, path)
-"""

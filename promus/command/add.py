@@ -95,7 +95,7 @@ def add_user(_):
     # useremail = arg.host
     info = os.environ['SSH_ORIGINAL_COMMAND']
     pub, key, email, user, username, host, alias = info.split(',')
-    sys.stdout.write('Welcome %s, please wait...\n' % username)
+    sys.stderr.write('Welcome %s, please wait...\n' % username)
     users, pending, unknown = prc.read_authorized_keys()
     # Remove access from private key
     for entry in pending:

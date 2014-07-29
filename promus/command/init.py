@@ -9,7 +9,7 @@ import promus.core as prc
 
 
 DESC = """
-Create a new git repository in the directory ~/git. You may create a
+create a new git repository in the directory ~/git. You may create a
 new repository in another directory by providing the option --dir.
 
 """
