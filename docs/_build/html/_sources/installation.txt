@@ -115,3 +115,9 @@ can use the ``verify`` command to make promus send you an email. ::
     sending email ... done
 
 At this point you should be ready to start using promus.
+
+.. note:: 
+
+    Make sure to use only one e-mail address in all the machines you
+    are using. This will help with the identification of users even
+    if you have different usernames in different machines.

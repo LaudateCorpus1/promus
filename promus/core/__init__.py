@@ -5,6 +5,11 @@ behave as well as other utility functions.
 
 """
 
+import re
+import os
+import sys
+import socket
+from promus.command import exec_cmd, date
 from promus.core.ssh import (
     make_key,
     get_keys,
@@ -50,19 +55,19 @@ from promus.core.util import (
     send_mail,
 )
 
-import socket
 
 # pylint: disable=R0902
 class Promus(object):
     "An instance of this object manages the commands issued over ssh. "
 
-    def __init__(self, script):
+    def __init__(self):
         # Host information
         self.host = socket.gethostname()
-        self.alias = git.gconfig('host.alias')
-        self.home = environ['HOME']
-        self.master = environ['USER']
-        self.master_name = git.gconfig('user.name')
+        self.alias = config('host.alias')
+        self.home = os.environ['HOME']
+        self.master = os.environ['USER']
+        self.master_name = config('user.name')
+        self.master_email = config('user.email')
 
         # Guest information
         self.guest = None
@@ -73,10 +78,8 @@ class Promus(object):
 
         # Setting up log file
         self.path = '%s/.promus' % self.home
-        util.make_dir(self.path)
+        make_dir(self.path)
         self.log_file = open('%s/promus.log' % self.path, 'a')
-        script = realpath(script).replace(self.home, '~')
-        self.log("INIT>> Running %s in %s" % (script, self.host))
 
         # Setting up functions based on command name
         self._exec = dict()
@@ -86,7 +89,7 @@ class Promus(object):
     def log(self, msg):
         "Write a message to the log file. "
         sys.stderr.write("[PROMUS]: %s\n" % msg)
-        msg = '[%s:~ %s]$ %s\n' % (util.date(True), self.guest, msg)
+        msg = '[%s:~ %s]$ %s\n' % (date(True), self.guest, msg)
         self.log_file.write(msg)
 
     def dismiss(self, msg, status):
@@ -105,41 +108,18 @@ class Promus(object):
     def exec_cmd(self, cmd, verbose=False):
         "Run a subprocess and return its output and errors. "
         self.log("EXEC>> %s" % cmd)
-        if verbose:
-            out = sys.stdout
-            err = sys.stderr
-        else:
-            out = PIPE
-            err = PIPE
-        process = Popen(cmd, shell=True, stdout=out, stderr=err)
-        out, err = process.communicate()
-        if verbose:
-            with open('%s/promus.last' % self.path, 'w') as tmpf:
-                tmpf.write("%s\n" % self.guest)
-                tmpf.write("%s\n" % self.guest_name)
-                tmpf.write("%s" % self.cmd)
-        return out, err, process.returncode
+        return exec_cmd(cmd, verbose)
 
     def _get_cmd(self):
         "Check to see if a command was given. Exit if it is not present. "
-        if 'SSH_ORIGINAL_COMMAND' not in environ:
+        if 'SSH_ORIGINAL_COMMAND' not in os.environ:
             msg = "GET_CMD-ERROR>> SSH_ORIGINAL_COMMAND not found."
             self.dismiss(msg, 1)
-        self.cmd = environ['SSH_ORIGINAL_COMMAND']
+        self.cmd = os.environ['SSH_ORIGINAL_COMMAND']
         pattern = re.compile('.*?[;&|]')
         if pattern.search(self.cmd):
             msg = "GET_CMD-ERROR>> More than one command: %s" % self.cmd
             self.dismiss(msg, 1)
-        self.cmd_token = self.cmd.split()
-        self.cmd_name = self.cmd_token[0]
-
-    def attend_last(self):
-        """Reads the file containing the last guest and sets the
-        guest info in order to proceed writing logs with that name.
-        """
-        with open('%s/promus.last' % self.path, 'r') as tmpf:
-            info = tmpf.read()
-        self.guest, self.guest_name, self.cmd = info.split('\n')
         self.cmd_token = self.cmd.split()
         self.cmd_name = self.cmd_token[0]
 
@@ -156,3 +136,21 @@ class Promus(object):
         self.dismiss("GREET>> done ...", 0)
 
 
+def deny(prs):
+    "Promus object default action. "
+    msg = "EXEC-ERROR>> Not enough permissions to run: '%s'" % prs.cmd
+    prs.dismiss(msg, 1)
+
+
+def exec_git(prs):
+    """Executes a git command. """
+    git_dir = os.path.expanduser(prs.cmd_token[1][1:-1])
+    acl = read_acl(git_dir)
+    if isinstance(acl, str):
+        msg = "EXEC_GIT-ERROR>> acl error: %s" % acl
+        prs.dismiss(msg, 1)
+    if prs.guest in acl['user']:  # acl['user'] contains acl['admin']
+        prs.exec_cmd(prs.cmd, True)
+    else:
+        msg = "EXEC_GIT-ERROR>> not in acl for `%s`" % git_dir
+        prs.dismiss(msg, 1)

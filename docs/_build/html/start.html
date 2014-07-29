@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Getting Started &mdash; promus 0.6b6 documentation</title>
+    <title>Getting Started &mdash; promus 0.7b6 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.6b6',
+        VERSION:     '0.7b6',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="promus 0.6b6 documentation" href="index.html" />
+    <link rel="top" title="promus 0.7b6 documentation" href="index.html" />
     <link rel="prev" title="Installing Promus" href="installation.html" /> 
   </head>
   <body>
@@ -37,7 +37,7 @@
         <li class="right" >
           <a href="installation.html" title="Installing Promus"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">promus 0.6b6 documentation</a> &raquo;</li> 
+        <li><a href="index.html">promus 0.7b6 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -105,6 +105,22 @@ which was set up just so that you can send your public key. After
 this, you will be able to connect to a repository to which your
 collaborator has given you permission to access.</p>
 </div>
+<div class="section" id="initializing-a-repository">
+<h2>Initializing a Repository<a class="headerlink" href="#initializing-a-repository" title="Permalink to this headline">¶</a></h2>
+<p>To create a repository in a remote server you will have to first
+access the server and execute the following command:</p>
+<div class="highlight-sh"><div class="highlight"><pre>promus init &lt;name_of_repository&gt;
+</pre></div>
+</div>
+<p>Where <tt class="docutils literal"><span class="pre">&lt;name_of_repository&gt;</span></tt> should be replaced by any name you
+desire.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will create the repository in <tt class="docutils literal"><span class="pre">~/git</span></tt>. You may specify the
+directory in which you want the repository to be created by
+specifying the option <tt class="docutils literal"><span class="pre">--dir</span></tt>.</p>
+</div>
+</div>
 </div>
 
 
@@ -119,6 +135,7 @@ collaborator has given you permission to access.</p>
 <li><a class="reference internal" href="#password-less-connection-to-server">Password-less Connection To Server</a></li>
 <li><a class="reference internal" href="#send-a-collaboration-request">Send a Collaboration Request</a></li>
 <li><a class="reference internal" href="#accepting-a-collaboration-request">Accepting a Collaboration Request</a></li>
+<li><a class="reference internal" href="#initializing-a-repository">Initializing a Repository</a></li>
 </ul>
 </li>
 </ul>
@@ -157,7 +174,7 @@ collaborator has given you permission to access.</p>
         <li class="right" >
           <a href="installation.html" title="Installing Promus"
              >previous</a> |</li>
-        <li><a href="index.html">promus 0.6b6 documentation</a> &raquo;</li> 
+        <li><a href="index.html">promus 0.7b6 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

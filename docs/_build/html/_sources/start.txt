@@ -78,4 +78,21 @@ which was set up just so that you can send your public key. After
 this, you will be able to connect to a repository to which your
 collaborator has given you permission to access.
 
+Initializing a Repository
+=========================
 
+To create a repository in a remote server you will have to first
+access the server and execute the following command:
+
+.. code-block:: sh
+
+    promus init <name_of_repository>
+
+Where ``<name_of_repository>`` should be replaced by any name you
+desire.
+
+.. note::
+
+    This will create the repository in ``~/git``. You may specify the
+    directory in which you want the repository to be created by
+    specifying the option ``--dir``.

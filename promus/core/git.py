@@ -1,10 +1,11 @@
 """Git utility"""
 
+import os
 import sys
-from promus.command import exec_cmd
-from os import remove, environ, uname
 from os.path import dirname, exists, split, basename
 from fnmatch import fnmatch
+from promus.command import exec_cmd
+PC = sys.modules['promus.core']
 
 
 def config(entry, val=None, global_setting=True):
@@ -22,7 +23,7 @@ def config(entry, val=None, global_setting=True):
 
 def describe():
     "Return last tag, number of commits and sha. "
-    out, _, status = util.exec_cmd('git describe --long')
+    out, _, status = exec_cmd('git describe --long')
     if status != 0:
         return None, 0, None
     out = out.split('-')
@@ -35,7 +36,7 @@ def repo_name(local=True):
         cmd = 'basename `git rev-parse --show-toplevel`'
     else:
         cmd = 'basename `pwd`'
-    out, _, _ = util.exec_cmd(cmd)
+    out, _, _ = exec_cmd(cmd)
     return util.strip(out)
 
 
@@ -51,46 +52,51 @@ def remote_path():
     return util.strip(out)
 
 
+def init(repo, directory=None):
+    """Create a bare git repository and create the `post-receive` and
+    `update` hook. You may have to modify these two hooks depending
+    on how you want to treat the repository. """
+    if not repo.endswith('.git'):
+        repo += '.git'
+    if directory is None:
+        directory = '%s/git' % os.environ['HOME']
+    PC.make_dir(directory)
+    fullpath = '%s/%s' % (directory, repo)
+    if os.path.exists(fullpath):
+        error("INIT-ERROR>> Existing repository: '%s'" % fullpath)
+    exec_cmd("git init --bare %s" % fullpath, True)
+    hooks = ['post-receive', 'update']
+    for hook in hooks:
+        path = '%s/hooks' % fullpath
+        make_hook(hook, path)
+    sys.stdout.write("INIT>> '%s' was created...\n" % fullpath)
+
+
+HOOK_TEMPLATE = '''#!/usr/bin/env python
+"""{hook} hook generated on {date}"""
+import promus.core as prc
+import promus.hooks.{hookpy} as hook
+
+if __name__ == "__main__":
+    PRS = prc.Promus()
+    hook.run(PRS)
+    PRS.dismiss("{hook}>> done...", 0)
+
+'''
+
+
 def make_hook(hook, path):
     "Creates the specified hook. "
     hook_file = "%s/%s" % (path, hook)
     if exists(hook_file):
         cmd = "mv %s %s.%s" % (hook_file, hook_file, util.date(True))
-        util.exec_cmd(cmd, True)
+        exec_cmd(cmd, True)
     hookpy = hook.replace('-', '_')
-    content = '#!/usr/bin/env python\n' \
-              '"""%s hook generated on %s"""\n' \
-              'from promus import Promus\n' \
-              'import promus.git as git\n' \
-              'import promus.git.%s as %s\n\n' \
-              'if __name__ == "__main__":\n' \
-              '    PRS = Promus(__file__)\n' \
-              '    %s.run(PRS)\n' \
-              '    PRS.dismiss("%s-HOOK>> done...", 0)' \
-              '\n' % (hook, util.date(), hookpy,
-                      hookpy, hookpy, hook.upper())
+    content = HOOK_TEMPLATE.format(hook=hook, hookpy=hookpy,
+                                   date=PC.date())
     with open(hook_file, 'w') as hookfp:
         hookfp.write(content)
-    util.exec_cmd('chmod +x %s' % hook_file, True)
-
-
-def init(prs, repo):
-    """Create a bare repository and initialize all hooks, acls and
-    the unison directory."""
-    if '.' in repo:
-        prs.dismiss("INIT-ERROR>> Repository name contains '.'", 1)
-    if exists(repo):
-        prs.dismiss("INIT-ERROR>> '%s' is an existing directory." % repo, 1)
-    repo = '%s.git' % repo
-    if exists(repo):
-        prs.dismiss("INIT-ERROR>> Existing bare repository: '%s'." % repo, 1)
-    prs.exec_cmd("git init --bare %s" % repo, True)
-    util.make_dir("%s/unison" % repo)
-    hooks = ['post-receive', 'update']
-    for hook in hooks:
-        path = '%s/hooks' % repo
-        make_hook(hook, path)
-    prs.dismiss("INIT>> Repository '%s' was created..." % repo, 0)
+    exec_cmd('chmod +x %s' % hook_file, True)
 
 
 def parse_dir(string):
@@ -291,7 +297,7 @@ def clone(prs, repo):
         admin_setup(prs, repo)
     else:
         user_setup(prs, repo)
-    if uname()[0] == 'Darwin':
+    if os.uname()[0] == 'Darwin':
         util.exec_cmd('open -a /Applications/GitHub.app "%s"' % repo, True)
     prs.dismiss("CLONE>> Repository '%s' has been cloned..." % repo, 0)
 
@@ -319,7 +325,7 @@ def admin_setup(prs, repo):
     with open('%s/.description' % repo, 'w') as tmpf:
         tmpf.write('%s description goes here\n' % repo)
     try:
-        remove('%s/.git/description' % repo)
+        os.remove('%s/.git/description' % repo)
     except OSError:
         pass
     util.exec_cmd('ln -s ../.description %s/.git/description' % repo, True)
@@ -347,7 +353,7 @@ def user_setup(prs, repo):
     print "Setting up repository..."
     print "linking .description..."
     try:
-        remove('%s/.git/description' % repo)
+        os.remove('%s/.git/description' % repo)
     except OSError:
         pass
     util.exec_cmd('ln -s ../.description %s/.git/description' % repo, True)

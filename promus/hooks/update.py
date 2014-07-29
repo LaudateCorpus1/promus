@@ -60,17 +60,18 @@ pushed.
 """
 
 import sys
-import promus.util as util
-import promus.git as git
+import promus.core as prc
+from promus.command import exec_cmd
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
 ADMIN_FILES = ['.acl', '.description', '.bashrc', '.gitignore']
-MSG = 'UPDATE>> You do not have access to push to "%s"'
-MSG_ADMIN = 'UPDATE>> You must be an admin to push to "%s"'
-MSG = "UPDATE>> You do not have access to push to another user's profile: %s"
+MSG = 'update>> No access to push to "%s"'
+MSG_ADMIN = 'update>> Must be an admin to push to "%s"'
+MSG_USER = "update>> No access to push to another user's profile: %s"
+
 
 def zip_list(acl, key):
     "Zip the list to handle two items at a time. "
@@ -81,8 +82,8 @@ def check_names(acl, user, mod_file):
     "Checks mod_file against the acl names. "
     has_access = None
     for names, users in zip_list(acl, 'name'):
-        if git.file_match(mod_file, names):
-            has_access = git.has_access(user, users)
+        if prc.file_match(mod_file, names):
+            has_access = prc.has_access(user, users)
             break
     return has_access
 
@@ -91,8 +92,8 @@ def check_paths(acl, user, mod_file):
     "Checks mod_file against the acl paths. "
     has_access = None
     for paths, users in zip_list(acl, 'path'):
-        if git.file_in_path(mod_file, paths):
-            has_access = git.has_access(user, users)
+        if prc.file_in_path(mod_file, paths):
+            has_access = prc.has_access(user, users)
             break
     return has_access
 
@@ -108,11 +109,11 @@ def add_file(mod_file, rev, files):
 def run(prs):
     """Function to execute when the update hook is called. """
     prs.attend_last()
-    acl = git.read_acl()
+    acl = prc.read_acl()
     if isinstance(acl, str) and prs.guest == prs.master:
-        prs.dismiss("UPDATE>> Skipping due to acl error: %s" % acl, 0)
+        prs.dismiss("update>> Skipping due to acl error: %s" % acl, 0)
     if isinstance(acl, str):
-        prs.dismiss("UPDATE-ERROR>> acl error: %s" % acl, 1)
+        prs.dismiss("update-error>> acl error: %s" % acl, 1)
     refname = sys.argv[1]
     prs.log("UPDATE>> checking %s" % refname)
     oldrev = sys.argv[2]
@@ -121,10 +122,10 @@ def run(prs):
     user_files = ['.%s.profile' % usr for usr in acl['user']]
     files = dict()
     cmd = "git log -1 --name-only --pretty=format:'' %s"
-    commits, _, _ = util.exec_cmd('git rev-list %s..%s' % (oldrev, newrev))
+    commits, _, _ = exec_cmd('git rev-list %s..%s' % (oldrev, newrev))
     for rev in commits.split('\n')[:-1]:
-        prs.log("UPDATE>> checking revision %s" % rev)
-        files_modified, _, _ = util.exec_cmd(cmd % rev)
+        prs.log("update>> checking revision %s" % rev)
+        files_modified, _, _ = exec_cmd(cmd % rev)
         for mod_file in files_modified.split('\n'):
             if mod_file == '':
                 continue

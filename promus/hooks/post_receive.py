@@ -46,7 +46,7 @@ HTML = """<!doctype html>
 <html>
 <style>
 body {
-    font-family: "Myriad Pro", Calibri, Helvetica, Arial, sans-serif; 
+    font-family: "Myriad Pro", Calibri, Helvetica, Arial, sans-serif;
     width: 500px;
     font-size: 16px;
 }
@@ -76,8 +76,8 @@ p.footer {
 <ul>
 %%s
 </ul>
-<p class="footer"><strong>Note:</strong> To stop recieving emails from 
-this repository modify your profile located in the git root: 
+<p class="footer"><strong>Note:</strong> To stop recieving emails from
+this repository modify your profile located in the git root:
 <code>.user.profile</code>.</p>
 <p class="footer">Set the keyword <code>notify</code> to <code>false</code> to
 stop reciving emails or set to <code>track</code> to recieve emails
