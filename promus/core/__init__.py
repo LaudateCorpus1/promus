@@ -108,9 +108,29 @@ class Promus(object):
         self._exec.get(cmd_name, deny)(self)
 
     def exec_cmd(self, cmd, verbose=False):
-        "Run a subprocess and return its output and errors. "
+        """Run a subprocess and return its output, errors and exit
+        code. It also stores the information about the guest who
+        executed the command inside the file
+        `~/.promus/promus.last`."""
         self.log("EXEC>> %s" % cmd)
+        with open('%s/promus.last' % self.path, 'w') as tmpf:
+            tmpf.write("%s\n" % self.guest_email)
+            tmpf.write("%s\n" % self.guest)
+            tmpf.write("%s\n" % self.guest_name)
+            tmpf.write("%s\n" % self.guest_alias)
+            tmpf.write("%s" % self.cmd)
         return exec_cmd(cmd, verbose)
+
+    def attend_last(self):
+        """Reads the file containing the last guest and sets the
+        guest info in order to proceed writing logs with that name.
+        """
+        with open('%s/promus.last' % self.path, 'r') as tmpf:
+            info = tmpf.read()
+            [self.guest_email, self.guest, self.guest_name,
+             self.guest_alias, self.cmd] = info.split('\n')
+            self.cmd_token = self.cmd.split()
+            self.cmd_name = self.cmd_token[0]
 
     def _get_cmd(self):
         "Check to see if a command was given. Exit if it is not present. "
