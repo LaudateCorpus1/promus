@@ -78,14 +78,4 @@ which was set up just so that you can send your public key. After
 this, you will be able to connect to a repository to which your
 collaborator has given you permission to access.
 
-.. module:: promus.core.ssh
-    :platform: Unix, Windows
-    :synopsis: sample of documented python code
-
-.. autofunction:: read_authorized_keys
-.. autofunction:: write_authorized_keys
-
-
-
-
 
