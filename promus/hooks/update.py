@@ -62,12 +62,13 @@ pushed.
 import sys
 import promus.core as prc
 from promus.command import exec_cmd
+from promus.core import ssh
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
-ADMIN_FILES = ['.acl', '.description', '.bashrc', '.gitignore']
+ADMIN_FILES = ['.acl']
 MSG = 'update>> No access to push to "%s"'
 MSG_ADMIN = 'update>> Must be an admin to push to "%s"'
 MSG_USER = "update>> No access to push to another user's profile: %s"
@@ -106,6 +107,35 @@ def add_file(mod_file, rev, files):
         files[mod_file] = [rev]
 
 
+def set_email(user_list, num, git_users):
+    """Given a list of users, it will replace the specified number by
+    an email address in the git_users dictionary."""
+    found = False
+    for email in git_users:
+        for key in git_users[email]:
+            if user_list[num] in git_users[email][key]:
+                user_list[num] = email
+                found = True
+                break
+        if found:
+            break
+
+
+def map_acl(acl):
+    """Changes the user names for email addresses. """
+    git_users, _, _ = ssh.read_authorized_keys()
+    for i in xrange(0, len(acl['user'])):
+        set_email(acl['user'], i, git_users)
+    for i in xrange(0, len(acl['admin'])):
+        set_email(acl['admin'], i, git_users)
+    if len(acl['path']) == 2:
+        for i in range(0, len(acl['path'][1])):
+            set_email(acl['path'][1], i, git_users)
+    if len(acl['name']) == 2:
+        for i in range(0, len(acl['name'][1])):
+            set_email(acl['name'][1], i, git_users)
+
+
 def run(prs):
     """Function to execute when the update hook is called. """
     prs.attend_last()
@@ -115,10 +145,11 @@ def run(prs):
     if isinstance(acl, str):
         prs.dismiss("update-error>> acl error: %s" % acl, 1)
     refname = sys.argv[1]
-    prs.log("UPDATE>> checking %s" % refname)
+    prs.log("update>> checking %s" % refname)
     oldrev = sys.argv[2]
     newrev = sys.argv[3]
-    user = prs.guest
+    user = prs.guest_email
+    map_acl(acl)
     user_files = ['.%s.profile' % usr for usr in acl['user']]
     files = dict()
     cmd = "git log -1 --name-only --pretty=format:'' %s"
