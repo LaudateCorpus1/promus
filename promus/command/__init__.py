@@ -37,7 +37,8 @@ def exec_cmd(cmd, verbose=False):
     else:
         out = PIPE
         err = PIPE
-    process = Popen(cmd, shell=True, universal_newlines=True,
+    process = Popen(cmd, shell=True,
+                    universal_newlines=True, executable="/bin/bash",
                     stdout=out, stderr=err)
     out, err = process.communicate()
     return out, err, process.returncode

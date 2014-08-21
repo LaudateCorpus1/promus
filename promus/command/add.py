@@ -10,7 +10,7 @@ import sys
 import socket
 import textwrap
 import promus.core as prc
-from promus.command import exec_cmd
+from promus.command import exec_cmd, error
 
 DESC = """
 adds a host to your ssh configuration file and sends your public git
@@ -32,7 +32,7 @@ def add_parser(subp, raw):
 
 
 def add_host(arg):
-    """Display your public key and your git key. """
+    """Add a new host with the private key that was sent. """
     _, _, code = exec_cmd('chmod 700 %s' % arg.host)
     if code != 0:
         sys.stderr.write('ERROR: Private key `%s` not found\n' % arg.host)
@@ -46,12 +46,16 @@ def add_host(arg):
     master_name = prc.config('user.name')
     alias = prc.config('host.alias')
     cmd = 'ssh -i {host} {host} ' \
-          '{pub},{gitkey},{email},{master},{name},{hostname},{alias}'
+          '"{pub},{gitkey},{email},{master},{name},{hostname},{alias}"'
     cmd = cmd.format(host=arg.host, gitkey=gitkey, email=email,
                      master=master, name=master_name, hostname=host,
                      alias=alias, pub=pub_key[-20:])
     sys.stderr.write('Contacting %s ... \n' % arg.host)
-    exec_cmd(cmd, True)
+    out, err, code = exec_cmd(cmd)
+    print out
+    print err
+    if code != 0:
+        error("ERROR: Remote did not accept the request.")
     os.remove(arg.host)
     config = prc.read_config()
     found = False
@@ -91,7 +95,7 @@ EMAIL_HTML = """<p>Hello {name},</p>
 
 
 def add_user(_):
-    """Display all the users that have access to your account. """
+    """Add the new user. """
     # useremail = arg.host
     info = os.environ['SSH_ORIGINAL_COMMAND']
     pub, key, email, user, username, host, alias = info.split(',')
@@ -102,6 +106,10 @@ def add_user(_):
         if entry[-20:] == pub:
             pub = entry
             break
+    sent_to = pending[pub][0]  # Email must match user email
+    if sent_to != email:
+        error("ERROR: Email mismatch, private key is not \
+              being used by intended recipient.")
     del pending[pub]
     if email not in users:
         users[email] = dict()

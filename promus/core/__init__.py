@@ -127,10 +127,10 @@ class Promus(object):
         """
         with open('%s/promus.last' % self.path, 'r') as tmpf:
             info = tmpf.read()
-            [self.guest_email, self.guest, self.guest_name,
-             self.guest_alias, self.cmd] = info.split('\n')
-            self.cmd_token = self.cmd.split()
-            self.cmd_name = self.cmd_token[0]
+        [self.guest_email, self.guest, self.guest_name,
+         self.guest_alias, self.cmd] = info.split('\n')
+        self.cmd_token = self.cmd.split()
+        self.cmd_name = self.cmd_token[0]
 
     def _get_cmd(self):
         "Check to see if a command was given. Exit if it is not present. "
