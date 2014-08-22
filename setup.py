@@ -53,6 +53,7 @@ setup(name='promus',
           'rsa>=3.1.4',
           'pycrypto>=2.6.1',
           'ecdsa>=0.11',
+          'python-dateutil>=2.2',
           ],
       package_data={
           'promus.paster': [
