@@ -44,9 +44,9 @@ Send a Collaboration Request
 ============================
 
 If you wish for collaborators to be able to access your repositories
-you need to let promous know what their public keys are so that they
-may access your account with a limited amount of privilages. These
-privilages are minimum and they only include ``git`` commands.
+you need to let promus know what their public keys are so that they
+may access your account with a limited amount of privileges. These
+privileges are minimum and they only include ``git`` commands.
 
 To let promus send an email in your behalf you can execute the
 following command:
@@ -78,6 +78,14 @@ which was set up just so that you can send your public key. After
 this, you will be able to connect to a repository to which your
 collaborator has given you permission to access.
 
+.. note::
+
+    The email address that you used during the promus setup must be
+    the same email address from which you retrieved the private key.
+    This is done for security purposes. If your promus is set up with
+    a different email address you may ask your collaborator to send
+    you another invitation to the correct email address.
+
 Initializing a Repository
 =========================
 
@@ -96,3 +104,21 @@ desire.
     This will create the repository in ``~/git``. You may specify the
     directory in which you want the repository to be created by
     specifying the option ``--dir``.
+
+
+Cloning a Repository
+====================
+
+To clone a repository you can use the command::
+
+    promus clone <server>:/path/to/repository.git
+
+Here ``<server>`` should be replaced by the host you are trying to
+obtain the repository from. The path to the repository is usually
+``~/git/<repository_name>.git``.
+
+.. note::
+
+    If you are a host trying to initialize a repository you must
+    clone the repository as a git user. That is, you must send a
+    request to yourself and add yourself as a host.
