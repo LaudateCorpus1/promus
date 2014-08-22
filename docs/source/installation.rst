@@ -4,13 +4,6 @@
 Installing Promus
 *****************
 
-There is more than one way to install promus, here we present two
-options, the easy way and the not so easy way. Choose one and
-continue reading.
-
-The Easy Way
-============
-
 The easiest way to install promus is to use ``pip``. If you wish to
 perform a global installation and you have admin rights then do
 
@@ -24,12 +17,8 @@ or to install in some directory under your user account
 
     pip install --user promus
 
-
-Installing on \*nix Systems
-===========================
-
-From the command line do the following (where x.y is the version
-number):
+If you prefer to do the installation manually then from the command
+line you may do the following (where x.y is the version number):
 
 .. code-block:: sh
 
@@ -42,10 +31,11 @@ The last command can be replaced by ``python setup.py install
 --user``. See `PyPI <https://pypi.python.org/pypi/promus/>`_ for all
 available versions.
 
-You may install promus at any time but be aware that the script will
-not work unless you have ``git`` installed.
+Once you have finished do the installation you need to set up your
+``$PATH`` so that your shell may look for it. If you are using ``bash``
+you can call the ``install`` command from promus::
 
-.. _git:
+    python -m promus install
 
 Git
 ===
@@ -58,29 +48,6 @@ before you even think about using promus you must obtain a copy of
 
 Make sure that ``git`` is installed in your system before proceding
 with the next section.
-
-.. _setup:
-
-Promus Script
-=============
-
-Before you can use promus you must make sure that you can access
-the ``promus`` command from your shell. For that you need to make
-sure that your ``PATH`` includes the path where your ``promus`` script
-is installed.
-
-To locate the paths python stores its packages simply fire up ``python``
-and enter the following
-
-.. code-block:: python
-
-    import sys, site
-    path = '%s/bin:%s/bin' % (site.getuserbase(), sys.prefix)
-    print "export PATH=%s:$PATH\n" % path
-
-Now copy the output given the commands and append it to the file
-``~/.bash_profile`` or ``.bashrc`` depending on the system and shell
-you are using. In this case we assume you are using ``bash``.
 
 Setting up promus
 =================
