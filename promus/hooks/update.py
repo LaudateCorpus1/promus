@@ -140,8 +140,8 @@ def run(prs):
     """Function to execute when the update hook is called. """
     prs.attend_last()
     acl = prc.read_acl()
-    if isinstance(acl, str) and prs.guest == prs.master:
-        prs.dismiss("update>> Skipping due to acl error: %s" % acl, 0)
+    if isinstance(acl, str) and prs.guest_email == prs.master_email:
+        prs.dismiss("update>> Welcome %s, first time commiting?" % prs.master_email, 0)
     if isinstance(acl, str):
         prs.dismiss("update-error>> acl error: %s" % acl, 1)
     refname = sys.argv[1]
