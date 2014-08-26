@@ -1,26 +1,37 @@
 .. _install:
 
-*****************
-Installing Promus
-*****************
+************
+Installation
+************
+
+Promus depends on other software. First we will go through some of
+the requirements.
+
+Requirements
+============
+
+- Python: Promus is a python package, thus if you wish to use promus
+  you will need a copy of Python installed on your system.
+- Git: You may obtain a copy of ``git`` at
+  `http://git-scm.com/downloads <http://git-scm.com/downloads>`_.
+- Pip: To make the installation of promus slightly easier you can use
+  pip. Having this package installed will make the installation of
+  promus and future packages a breeze.
+
+Installing promus
+=================
 
 The easiest way to install promus is to use ``pip``. If you wish to
-perform a global installation and you have admin rights then do
-
-.. code-block:: sh
+perform a global installation and you have admin rights then do::
 
     sudo pip install promus
 
-or to install in some directory under your user account
-
-.. code-block:: sh
+or to install in some directory under your user account::
 
     pip install --user promus
 
 If you prefer to do the installation manually then from the command
-line you may do the following (where x.y is the version number):
-
-.. code-block:: sh
+line you may do the following (where x.y is the version number): ::
 
     wget https://pypi.python.org/packages/source/p/promus/promus-x.y.tar.gz
     tar xvzf promus-x.y.tar.gz
@@ -37,25 +48,16 @@ you can call the ``install`` command from promus::
 
     python -m promus install
 
-Git
-===
+After performing this command you will be able to use promus from the
+command line::
 
-Promus was designed with one goal in mind: to make ``git`` available
-in your own server without administrator rights. For this reason,
-before you even think about using promus you must obtain a copy of
-``git`` which you can obtain at `http://git-scm.com/downloads
-<http://git-scm.com/downloads>`_.
-
-Make sure that ``git`` is installed in your system before proceding
-with the next section.
+    promus -h
 
 Setting up promus
 =================
 
-If you completed the previous sections then you are well on your way
-to creating your first private repositories or to connect to one.
-First you need to let promus and git some information about yourself.
-::
+Once you complete the installation we need to first setup promus.
+This is done by giving some information about yourself::
 
     $ promus setup
     Full name: 
@@ -64,16 +66,29 @@ First you need to let promus and git some information about yourself.
     Host e-mail: 
     Password:
 
-Keep in mind that if you are not going to use your personal computer
-to create repositories then there is no need to provide a ``Host
-e-mail`` nor a ``Password``. What is important however, is that you
-provide a ``Hostname alias``. The alias will be helpful to identify
-the machine from where you provided commands.
+Your "Full name" and "E-mail address" are the two pieces of
+information that identify you. Please use the email address that you
+would want collaborators to use when they request that you join one
+of their projects. All authentication is done by comparing an email
+address.
 
-If you are setting up promus to create repositories and your server
-provides you with an e-mail address then you are allowed to ommit
-entering your password since the system can authenticate you when you
-``ssh`` to the server.
+.. note:: 
+
+    Make sure to use only one e-mail address in all the machines you
+    are using. This will help with the identification of users even
+    if you have different usernames in different machines.
+
+The "Hostname alias" should be a word that helps you identify the
+host that you are using. For instance, when using a macbook pro you
+could give the machine a name and thus you could use that as the
+Hostname alias. This will not only help you but also your
+collaborators know where you are submitting information from.
+
+The "Host e-mail" and "Password" are two entries which you may skip
+if you are not planning on Hosting any repositories. If you do decide
+to Host repositories then you can use any email address setup with
+smtp (gmail, yahoo, etc) and its password. This email address will be
+used to send emails on your behalf to the users of the repository.
 
 To make sure that the email you provided for the host is working you
 can use the ``verify`` command to make promus send you an email. ::
@@ -82,9 +97,3 @@ can use the ``verify`` command to make promus send you an email. ::
     sending email ... done
 
 At this point you should be ready to start using promus.
-
-.. note:: 
-
-    Make sure to use only one e-mail address in all the machines you
-    are using. This will help with the identification of users even
-    if you have different usernames in different machines.

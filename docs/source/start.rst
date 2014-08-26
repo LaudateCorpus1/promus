@@ -4,95 +4,72 @@
 Getting Started
 ***************
 
-Promus allows you to create repositories in a remote server to which
-you and your collaborators may have access to. There are several
-scenarios in which you can use promus.
-
+In this section we will explain how to create your first repository
+in a remote machine to which you have access via ``ssh``. We will 
+assume that you already followed the installation instructions in
+your local machine. To start first we need to set up the remote
+server.
 
 Password-less Connection To Server
 ==================================
 
-We assume that you wish to create a repository in some server to
-which you have access via ``ssh`` from your personal computer. We
-also assume that the alias given to your personal computer is ``mac``
-and shall henceforth refer to the personal computer by the alias.
+To set up a repository in a remote server we need access to a remote
+server. This will be done many times and for that we will want to avoid
+typing in your password.
 
-To create a passwordless access to a remote machine we need to let
-the remote machine get a hold of a public key that may have been
-created by promus or may have already existed in the ``mac`` machine.
-
-To do this use the promus ``connect`` command:
-
-.. code-block:: sh
+To create a passwordless access to a remote server we use the
+``connect`` command ::
 
     promus connect username@server-name server-alias
 
-You will be prompted for your password the remote machine has not
-been set up with passwordless access. Once this is done you will
-be able to ``ssh`` as you always do minus the password, or you can
-use the ``server-alias`` you provided to promus:
+Here "server-alias" is the name you want to assign to the remote
+server. This is helpful since it can help you avoid typing the
+complete server name in the future.
 
-.. code-block:: sh
+You will be prompted for your password if the remote machine has not
+been set up with passwordless access. Once this is done you will be
+able to ``ssh`` as you always do minus the password, or you can use
+the ``server-alias`` you provided to promus by using::
 
     ssh server-alias
 
-Once you connect to the server you can install promus there so that
-you may start creating your first repositories.
-
+Once you connect to the server you need to install and setup promus
+there so that you may start creating your first repositories. Please
+remember to always use the same e-mail address you used in your local
+machine.
 
 Send a Collaboration Request
 ============================
 
-If you wish for collaborators to be able to access your repositories
-you need to let promus know what their public keys are so that they
-may access your account with a limited amount of privileges. These
-privileges are minimum and they only include ``git`` commands.
+The promus setup helps promus identify you as its master. Once you
+create repositories promus will allow you to modify them without
+questioning you about your permissions to the repository. To do this
+however, you need to act as a git user. In order to do that you need
+to send a collaboration request to yourself.::
 
-To let promus send an email in your behalf you can execute the
-following command:
+    promus send request <your_email> 'your name'
 
-.. code-block:: sh
-
-    promus send request email@hostname 'First Last'
-
-The last argument, namely ``'First Last'`` is not required but if you
-provide it, then promus will address your collaborator by that name.
-The email sent will contain contain a link to this documentation and
-the command that needs to be executed to accept the request.
+This will send an email with an attachment which will be used to
+connect to the server as a git user.
 
 Accepting a Collaboration Request
 =================================
 
-By accepting a collaboration request you will simply send your public
-key so that your host can recognize you. The instructions on how to do
-this are stated on the email sent by your host. The typical command
-to execute is
-
-.. code-block:: sh
+To accept a collaboration request simply follow the instructions
+on the email sent by promus. The typical command to execute is::
 
     promus add host username@hostname
 
 This has to be done from a working directory which contains the file
 ``username@hostname``. This file contains a temporary private key
-which was set up just so that you can send your public key. After
-this, you will be able to connect to a repository to which your
-collaborator has given you permission to access.
+which was set up so that you can send your public key. After this,
+you will be able to connect to the server as a git user.
 
-.. note::
+Initializing Your First Repository
+==================================
 
-    The email address that you used during the promus setup must be
-    the same email address from which you retrieved the private key.
-    This is done for security purposes. If your promus is set up with
-    a different email address you may ask your collaborator to send
-    you another invitation to the correct email address.
-
-Initializing a Repository
-=========================
-
-To create a repository in a remote server you will have to first
-access the server and execute the following command:
-
-.. code-block:: sh
+To create your first repository in a remote server you have to first
+access the server and execute the following command::
 
     promus init <name_of_repository>
 
@@ -109,7 +86,8 @@ desire.
 Cloning a Repository
 ====================
 
-To clone a repository you can use the command::
+In your local machine now you will want to "clone" or make a copy of
+the repository. This can be done by::
 
     promus clone <server>:/path/to/repository.git
 
@@ -119,6 +97,12 @@ obtain the repository from. The path to the repository is usually
 
 .. note::
 
-    If you are a host trying to initialize a repository you must
-    clone the repository as a git user. That is, you must send a
-    request to yourself and add yourself as a host.
+    The email sent to you by promus verifying the connection mentions
+    the host name and a user name. These two pieces of information
+    need to be concatenated with a dash in order to create the server
+    name. If you are still not sure which repository and how to clone
+    it you may use the command ``promus search``. This will search
+    all possible connections to outside repositories and tell you
+    how to make a clone.
+
+
