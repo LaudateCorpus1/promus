@@ -45,6 +45,11 @@ def c_warn(msg):
     sys.stderr.write(c_msg('Y', msg+'\n'))
 
 
+def c_disp(color, msg):
+    """Print a color message to the stardard output stream. """
+    sys.stdout.write(c_msg(color, msg))
+
+
 def dump_config(config):
     """Store a sync configuration. """
     with open(pth.expanduser('~/.promus/promus-sync'), 'w') as tmp:
@@ -109,7 +114,7 @@ def register(local, remote, alias):
     dump_config(config)
     entry_file = pth.expanduser('~/.promus/sync-%d.txt' % (len(config)-1))
     open(entry_file, 'w').close()
-    disp(c_msg('B', 'Registration successful. \n'))
+    c_disp('B', 'Registration successful. \n')
 
 
 def unregister(index):
@@ -161,7 +166,7 @@ def set_alias(index, alias):
         except IndexError:
             c_error("Invalid entry number. ")
         config[num][0] = alias
-        disp(c_msg('B', '%d <==> %s\n' % (num, alias)))
+        c_disp('B', '%d <==> %s\n' % (num, alias))
     dump_config(config)
 
 
@@ -193,7 +198,7 @@ def _explore_remote(local, remote):
     transfering to local and which files are missing in the remote.
     Returns the list of incoming files and the list of files missing
     in the remote. """
-    disp(c_msg('B', "Receiving list of incoming files ...\n"))
+    disp('* receiving list of incoming files ... ')
     cmd = 'rsync -nravz --delete --exclude .DS_Store ' \
           '--out-format="%n<>%M" {0} {1}'.format(remote, local)
     out, _, _ = exec_cmd(cmd)
@@ -208,19 +213,17 @@ def _explore_remote(local, remote):
             )
         else:
             remote_missing.append(file_.split(' ', 1)[1])
+    disp('done\n')
     return incoming, remote_missing
 
 
 def _analyze_incoming(num, incoming, local, sync_date):
     """Study the incoming files to avoid overwriting of files. """
     if incoming:
-        msg = c_msg('B', 'Analysing ')
-        msg += c_msg('BB', len(incoming))
-        msg += c_msg('B', ' files to avoid erroneous overwriting ...\n')
-        disp(msg)
+        disp('  - analysing %d incoming files\n' % len(incoming))
     exclude = open('%s/.promus/tmp.txt' % os.environ['HOME'], 'w')
     for in_index, in_file in enumerate(incoming):
-        disp('[{0}/{1}]: '.format(in_index+1, len(incoming)))
+        disp('    [{0}/{1}]: '.format(in_index+1, len(incoming)))
         if pth.isfile(local+in_file[0]):
             local_time = datetime.fromtimestamp(pth.getmtime(local+in_file[0]))
             if local_time > sync_date:
@@ -232,9 +235,9 @@ def _analyze_incoming(num, incoming, local, sync_date):
                         date=local_time.strftime("%Y_%m_%d-%H_%M_%S"),
                         name=file_name
                     )
-                    disp(c_msg('C', in_file[0]))
-                    disp(c_msg('Y', ' will be renamed to "'))
-                    disp(c_msg('C', new_name))
+                    c_disp('C', in_file[0])
+                    c_disp('Y', ' will be renamed to "')
+                    c_disp('C', new_name)
                     disp('".\n')
                     os.rename(local+in_file[0], local+new_name)
                 else:
@@ -262,13 +265,10 @@ def _analyse_remote_missing(num, remote_missing, local, sync_date):
     """Analyze the list of missing files in the remote to avoid local
     deletion of files. """
     if remote_missing:
-        msg = c_msg('B', 'Analysing ')
-        msg += c_msg('BB', len(remote_missing))
-        msg += c_msg('B', ' local files to avoid erroneous removal ...\n')
-        disp(msg)
+        disp('  - analysing %d missing files in remote\n' % len(remote_missing))
     remove = open('%s/.promus/tmp.txt' % os.environ['HOME'], 'w')
     for index, file_ in enumerate(remote_missing):
-        disp('[{0}/{1}]: '.format(index+1, len(remote_missing)))
+        disp('    [{0}/{1}]: '.format(index+1, len(remote_missing)))
         if os.path.isfile(local+file_):
             if datetime.fromtimestamp(pth.getmtime(local+file_)) > sync_date:
                 disp(c_msg('C', file_))
@@ -290,26 +290,25 @@ def _analyse_remote_missing(num, remote_missing, local, sync_date):
 
 def _remote_to_local(remote, local):
     """Call rsync. """
-    disp(c_msg('G', "rsync: REMOTE to LOCAL (UPDATE - NO DELETION) ..."))
-    disp('\n')
-    cmd = "rsync -razuv --progress --exclude-from " \
-          "'%s/.promus/exclude.txt' %s %s"
+    disp('* remote --> local (update: no deletion) ... ')
+    cmd = "rsync -razuv --exclude-from '%s/.promus/exclude.txt' %s %s"
     cmd = cmd % (os.environ['HOME'], remote, local)
-    exit_code = os.system(cmd)
-    if exit_code != 0:
-        c_error('rsync returned error code: %d' % exit_code)
-        exit(exit_code)
+    _, _, code = exec_cmd(cmd)
+    if code != 0:
+        c_error('rsync returned error code: %d' % code)
+        exit(code)
+    disp('done\n')
 
 
 def _local_to_remote(local, remote):
     """Call rsync. """
-    disp(c_msg('G', "rsync: LOCAL to REMOTE (DELETE) ..."))
-    disp('\n')
-    cmd = "rsync -razuv --delete --progress %s %s" % (local, remote)
-    exit_code = os.system(cmd)
-    if exit_code != 0:
-        c_error('rsync returned error code: %d' % exit_code)
-        exit(exit_code)
+    disp('* local --> remote (delete) ... ')
+    cmd = "rsync -razuv --delete %s %s" % (local, remote)
+    _, _, code = exec_cmd(cmd)
+    if code != 0:
+        c_error('rsync returned error code: %d' % code)
+        exit(code)
+    disp('done\n')
 
 
 def _clean_local(local):
@@ -317,40 +316,42 @@ def _clean_local(local):
     with open('%s/.promus/remove.txt' % os.environ['HOME'], 'r') as tmp:
         lines = tmp.readlines()
     if lines:
-        disp(c_msg('B', "Deleting %d files/directories ...\n" % len(lines)))
+        disp("* deleting %d files/directories ...\n" % len(lines))
+    index = 0
     for file_ in reversed(lines):
+        disp('  [{0}/{1}]: '.format(index+1, len(lines)))
         fname = local + file_[0:-1]
         if fname[-1] == '/':
             try:
                 os.rmdir(fname)
-                disp(c_msg('C', fname))
-                disp(' has been deleted\n')
+                c_disp('C', fname)
+                c_disp('R', ' has been deleted\n')
             except OSError:
-                disp(c_msg('R', 'Unable to delete '))
-                disp(c_msg('C', fname+'\n'))
+                c_disp('R', 'ERROR: Unable to delete ')
+                c_disp('C', fname+'\n')
         else:
             try:
                 os.remove(fname)
-                disp(c_msg('C', fname))
-                disp(' has been deleted\n')
+                c_disp('C', fname)
+                c_disp('R', ' has been deleted\n')
             except OSError:
-                disp(c_msg('R', 'Unable to delete '))
-                disp(c_msg('C', fname+'\n'))
+                c_disp('R', 'ERROR: Unable to delete ')
+                c_disp('C', fname+'\n')
+        index += 1
 
 
 def _record_sync(config, num, local):
     """Save sync date. """
     config[num][3] = datetime.now()
-    msg = "Saving sync date: %s ..."
+    msg = "* saving sync date: %s ... "
     msg = msg % config[num][3].strftime("%b/%d/%Y - %H:%M:%S")
-    disp(c_msg('G', msg))
-    disp('\n')
+    disp(msg)
     dump_config(config)
     cmd = 'cd %s;'
     # Make find show slash after directories
     #  http://unix.stackexchange.com/a/4857
     cmd += 'find . -type d -exec sh -c \'printf '
-    cmd +=  r'"%%s/\n" "$0"\' {} \; -or -print'
+    cmd += r'"%%s/\n" "$0"\' {} \; -or -print'
     # Need to delete ./ from the path:
     #  http://stackoverflow.com/a/1571652/788553
     cmd += ' | sed s:"./":: > %s/.promus/sync-%d.txt'
@@ -359,6 +360,7 @@ def _record_sync(config, num, local):
     # os.remove('%s/.promus/tmp.txt' % HOME)
     # os.remove('%s/.promus/exclude.txt' % HOME)
     # os.remove('%s/.promus/remove.txt' % HOME)
+    disp('done\n')
 
 
 def _sync(config, num):
