@@ -61,6 +61,8 @@ def add_parser(subp, raw):
     tmpp.add_argument('--set-alias', metavar='ALIAS',
                       dest='mod_alias', default=None,
                       help="modify the alias of an entry")
+    tmpp.add_argument('--remove', action='store_true',
+                      help="remove an entry")
 
 
 def run(arg):
@@ -69,6 +71,8 @@ def run(arg):
         sync.register(arg.local, arg.remote, arg.alias)
     if arg.mod_alias is not None:
         sync.set_alias(arg.index, arg.mod_alias)
+    if arg.remove:
+        sync.unregister(arg.index)
     if arg.display:
         config = sync.load_config()
         for num, _ in enumerate(config):

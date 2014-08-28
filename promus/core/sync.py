@@ -1,5 +1,6 @@
 """Sync Utilities"""
 
+import os
 import sys
 import os.path as pth
 from datetime import datetime
@@ -108,6 +109,37 @@ def register(local, remote, alias):
     entry_file = pth.expanduser('~/.promus/sync-%d.txt' % (len(config)-1))
     open(entry_file, 'w').close()
     disp(c_msg('B', 'Registration successful. \n'))
+
+
+def unregister(index):
+    """Remove an entry. """
+    try:
+        index = int(index)
+    except (ValueError, TypeError):
+        c_error("provide a valid index")
+    config = load_config()
+    if index < 0 or index >= len(config):
+        c_error("invalid entry index")
+    c_warn('Are you sure you want to delete this entry:')
+    print_entry(config, index)
+    choice = raw_input(c_msg('BD', "[yes/no] => ")).lower()
+    if choice in ['yes', 'y']:
+        del config[index]
+        dump_config(config)
+        home = os.environ['HOME']
+        try:
+            os.remove('%s/.pysync/sync-%d.txt' % (home, index))
+        except OSError:
+            pass
+        while index < len(config):
+            old = '%s/.pysync/sync-%d.txt' % (home, index+1)
+            new = '%s/.pysync/sync-%d.txt' % (home, index)
+            os.rename(old, new)
+            index += 1
+    elif choice in ['no', 'n']:
+        pass
+    else:
+        c_error("respond with 'yes' or 'no'")
 
 
 def set_alias(index, alias):
