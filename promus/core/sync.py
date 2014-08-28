@@ -128,12 +128,12 @@ def unregister(index):
         dump_config(config)
         home = os.environ['HOME']
         try:
-            os.remove('%s/.pysync/sync-%d.txt' % (home, index))
+            os.remove('%s/.promus/sync-%d.txt' % (home, index))
         except OSError:
             pass
         while index < len(config):
-            old = '%s/.pysync/sync-%d.txt' % (home, index+1)
-            new = '%s/.pysync/sync-%d.txt' % (home, index)
+            old = '%s/.promus/sync-%d.txt' % (home, index+1)
+            new = '%s/.promus/sync-%d.txt' % (home, index)
             os.rename(old, new)
             index += 1
     elif choice in ['no', 'n']:
@@ -162,3 +162,26 @@ def set_alias(index, alias):
         config[num][0] = alias
         disp(c_msg('B', '%d <==> %s\n' % (num, alias)))
     dump_config(config)
+
+
+def reset_date(index):
+    """Reset the last sync date. """
+    try:
+        index = int(index)
+    except (ValueError, TypeError):
+        c_error("provide a valid index")
+    config = load_config()
+    if index < 0 or index >= len(config):
+        c_error("invalid entry index")
+    c_warn('Are you sure you want to reset the last sync date on:')
+    print_entry(config, index)
+    choice = raw_input(c_msg('BD', "[yes/no] => ")).lower()
+    if choice in ['yes', 'y']:
+        config[index][3] = datetime(1, 1, 1)
+        dump_config(config)
+        home = os.environ['HOME']
+        open('%s/.promus/sync-%d.txt' % (home, index), 'w').close()
+    elif choice in ['no', 'n']:
+        pass
+    else:
+        c_error("respond with 'yes' or 'no'")

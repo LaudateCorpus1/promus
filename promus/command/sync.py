@@ -63,19 +63,26 @@ def add_parser(subp, raw):
                       help="modify the alias of an entry")
     tmpp.add_argument('--remove', action='store_true',
                       help="remove an entry")
+    tmpp.add_argument('--reset', action='store_true',
+                      help="reset last sync date")
 
 
 def run(arg):
     """Run command. """
     if arg.register:
         sync.register(arg.local, arg.remote, arg.alias)
-    if arg.mod_alias is not None:
+    elif arg.mod_alias is not None:
         sync.set_alias(arg.index, arg.mod_alias)
-    if arg.remove:
+    elif arg.remove:
         sync.unregister(arg.index)
-    if arg.display:
+    elif arg.reset:
+        sync.reset_date(arg.index)
+    elif arg.index:
+        print arg.index
+    elif arg.display:
         config = sync.load_config()
         for num, _ in enumerate(config):
             sync.print_entry(config, num)
         if len(config) == 0:
             sync.c_warn('No entries to show. see "promus sync -h"')
+            
