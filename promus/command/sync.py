@@ -17,6 +17,18 @@ DESC = """
 synchronize two directories in a similar fashion as DropBox using
 rsync as the main process to transfer files.
 
+add entry:
+    $ promus sync local_dir remote_dir
+
+add entry with alias:
+    $ promus sync local_dir remote_dir alias
+
+list entries:
+    $ promus sync
+
+sync entry:
+    $ promus sync index/alias
+
 """
 
 
@@ -78,11 +90,10 @@ def run(arg):
     elif arg.reset:
         sync.reset_date(arg.index)
     elif arg.index:
-        print arg.index
+        sync.sync_entry(arg.index)
     elif arg.display:
         config = sync.load_config()
         for num, _ in enumerate(config):
             sync.print_entry(config, num)
         if len(config) == 0:
             sync.c_warn('No entries to show. see "promus sync -h"')
-            

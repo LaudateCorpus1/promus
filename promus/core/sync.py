@@ -2,6 +2,7 @@
 
 import os
 import sys
+import socket
 import os.path as pth
 from datetime import datetime
 from six.moves import cPickle as pickle
@@ -185,3 +186,216 @@ def reset_date(index):
         pass
     else:
         c_error("respond with 'yes' or 'no'")
+
+
+def _explore_remote(local, remote):
+    """Call rsync remote to local to see which files will be
+    transfering to local and which files are missing in the remote.
+    Returns the list of incoming files and the list of files missing
+    in the remote. """
+    disp(c_msg('B', "Receiving list of incoming files ...\n"))
+    cmd = 'rsync -nravz --delete --exclude .DS_Store ' \
+          '--out-format="%n<>%M" {0} {1}'.format(remote, local)
+    out, _, _ = exec_cmd(cmd)
+    tmp_files = out.split('\n')[1:-4]
+    incoming = list()
+    remote_missing = list()
+    for file_ in tmp_files:
+        entry = file_.split('<>')
+        if len(entry) > 1:
+            incoming.append(
+                (entry[0], datetime.strptime(entry[1], '%Y/%m/%d-%H:%M:%S'))
+            )
+        else:
+            remote_missing.append(file_.split(' ', 1)[1])
+    return incoming, remote_missing
+
+
+def _analyze_incoming(num, incoming, local, sync_date):
+    """Study the incoming files to avoid overwriting of files. """
+    if incoming:
+        msg = c_msg('B', 'Analysing ')
+        msg += c_msg('BB', len(incoming))
+        msg += c_msg('B', ' files to avoid erroneous overwriting ...\n')
+        disp(msg)
+    exclude = open('%s/.promus/tmp.txt' % os.environ['HOME'], 'w')
+    for in_index, in_file in enumerate(incoming):
+        disp('[{0}/{1}]: '.format(in_index+1, len(incoming)))
+        if pth.isfile(local+in_file[0]):
+            local_time = datetime.fromtimestamp(pth.getmtime(local+in_file[0]))
+            if local_time > sync_date:
+                if in_file[1] > sync_date:
+                    (dir_name, file_name) = pth.split(in_file[0])
+                    new_name = '{dir}/({host})({date})_{name}'.format(
+                        dir=dir_name,
+                        host=socket.gethostname(),
+                        date=local_time.strftime("%Y_%m_%d-%H_%M_%S"),
+                        name=file_name
+                    )
+                    disp(c_msg('C', in_file[0]))
+                    disp(c_msg('Y', ' will be renamed to "'))
+                    disp(c_msg('C', new_name))
+                    disp('".\n')
+                    os.rename(local+in_file[0], local+new_name)
+                else:
+                    disp(c_msg('C', in_file[0]))
+                    disp(c_msg('R', ' has been modified locally.\n'))
+            else:
+                disp(c_msg('C', in_file[0]))
+                disp(' has not been modified.\n')
+        elif pth.isdir(local+in_file[0]):
+            disp(c_msg('C', in_file[0]))
+            disp(' is an existing directory.\n')
+        else:
+            disp(c_msg('C', in_file[0]))
+            disp(c_msg('Y', ' may be excluded.\n'))
+            exclude.write(in_file[0]+'\n')
+    exclude.close()
+    # To find lines common to two files
+    # http://www.unix.com/shell-programming-scripting/144741-simple-script-find-common-strings-two-files.html
+    cmd = 'grep -Fxf {home}/.promus/tmp.txt {home}/.promus/sync-{num}.txt ' \
+          '> {home}/.promus/exclude.txt'
+    exec_cmd(cmd.format(home=os.environ['HOME'], num=num), True)
+
+
+def _analyse_remote_missing(num, remote_missing, local, sync_date):
+    """Analyze the list of missing files in the remote to avoid local
+    deletion of files. """
+    if remote_missing:
+        msg = c_msg('B', 'Analysing ')
+        msg += c_msg('BB', len(remote_missing))
+        msg += c_msg('B', ' local files to avoid erroneous removal ...\n')
+        disp(msg)
+    remove = open('%s/.promus/tmp.txt' % os.environ['HOME'], 'w')
+    for index, file_ in enumerate(remote_missing):
+        disp('[{0}/{1}]: '.format(index+1, len(remote_missing)))
+        if os.path.isfile(local+file_):
+            if datetime.fromtimestamp(pth.getmtime(local+file_)) > sync_date:
+                disp(c_msg('C', file_))
+                disp(' has been modified - will not be deleted.\n')
+            else:
+                disp(c_msg('C', file_))
+                disp(c_msg('Y', ' may require deletion.\n'))
+                remove.write(file_+'\n')
+        else:
+            disp('Directory ')
+            disp(c_msg('C', file_))
+            disp(c_msg('Y', ' may require deletion.\n'))
+            remove.write(file_+'\n')
+    remove.close()
+    cmd = 'grep -Fxf {home}/.promus/tmp.txt {home}/.promus/sync-{num}.txt ' \
+          '> {home}/.promus/remove.txt'
+    exec_cmd(cmd.format(home=os.environ['HOME'], num=num), True)
+
+
+def _remote_to_local(remote, local):
+    """Call rsync. """
+    disp(c_msg('G', "rsync: REMOTE to LOCAL (UPDATE - NO DELETION) ..."))
+    disp('\n')
+    cmd = "rsync -razuv --progress --exclude-from " \
+          "'%s/.promus/exclude.txt' %s %s"
+    cmd = cmd % (os.environ['HOME'], remote, local)
+    exit_code = os.system(cmd)
+    if exit_code != 0:
+        c_error('rsync returned error code: %d' % exit_code)
+        exit(exit_code)
+
+
+def _local_to_remote(local, remote):
+    """Call rsync. """
+    disp(c_msg('G', "rsync: LOCAL to REMOTE (DELETE) ..."))
+    disp('\n')
+    cmd = "rsync -razuv --delete --progress %s %s" % (local, remote)
+    exit_code = os.system(cmd)
+    if exit_code != 0:
+        c_error('rsync returned error code: %d' % exit_code)
+        exit(exit_code)
+
+
+def _clean_local(local):
+    """Delete local files. """
+    with open('%s/.promus/remove.txt' % os.environ['HOME'], 'r') as tmp:
+        lines = tmp.readlines()
+    if lines:
+        disp(c_msg('B', "Deleting %d files/directories ...\n" % len(lines)))
+    for file_ in reversed(lines):
+        fname = local + file_[0:-1]
+        if fname[-1] == '/':
+            try:
+                os.rmdir(fname)
+                disp(c_msg('C', fname))
+                disp(' has been deleted\n')
+            except OSError:
+                disp(c_msg('R', 'Unable to delete '))
+                disp(c_msg('C', fname+'\n'))
+        else:
+            try:
+                os.remove(fname)
+                disp(c_msg('C', fname))
+                disp(' has been deleted\n')
+            except OSError:
+                disp(c_msg('R', 'Unable to delete '))
+                disp(c_msg('C', fname+'\n'))
+
+
+def _record_sync(config, num, local):
+    """Save sync date. """
+    config[num][3] = datetime.now()
+    msg = "Saving sync date: %s ..."
+    msg = msg % config[num][3].strftime("%b/%d/%Y - %H:%M:%S")
+    disp(c_msg('G', msg))
+    disp('\n')
+    dump_config(config)
+    cmd = 'cd %s;'
+    # Make find show slash after directories
+    #  http://unix.stackexchange.com/a/4857
+    cmd += 'find . -type d -exec sh -c \'printf '
+    cmd +=  r'"%%s/\n" "$0"\' {} \; -or -print'
+    # Need to delete ./ from the path:
+    #  http://stackoverflow.com/a/1571652/788553
+    cmd += ' | sed s:"./":: > %s/.promus/sync-%d.txt'
+    cmd = cmd % (local, os.environ["HOME"], num)
+    exec_cmd(cmd, True)
+    # os.remove('%s/.promus/tmp.txt' % HOME)
+    # os.remove('%s/.promus/exclude.txt' % HOME)
+    # os.remove('%s/.promus/remove.txt' % HOME)
+
+
+def _sync(config, num):
+    """Sync an entry in the configuration. """
+    print_entry(config, num)
+    local = config[num][1]
+    remote = config[num][2]
+    sync_date = config[num][3]
+    # RECEVING INCOMING
+    incoming, remote_missing = _explore_remote(local, remote)
+    # ANALYSE INCOMING
+    _analyze_incoming(num, incoming, local, sync_date)
+    # ANALYSE REMOTE
+    _analyse_remote_missing(num, remote_missing, local, sync_date)
+    # REMOTE TO LOCAL
+    _remote_to_local(remote, local)
+    # CLEAN LOCAL
+    _clean_local(local)
+    # LOCAL TO REMOTE
+    _local_to_remote(local, remote)
+    # RECORD SYNC
+    _record_sync(config, num, local)
+
+
+def sync_entry(index):
+    """Synchronize an entry. """
+    config = load_config()
+    if index.isdigit():
+        index = [int(index)]
+    else:
+        index = [i for i, v in enumerate(config) if v[0] == index]
+    if not index:
+        c_warn("Nothing to sync.")
+        return
+    for num in index:
+        try:
+            config[num]
+        except IndexError:
+            c_error("Invalid entry number/alias. ")
+        _sync(config, num)
