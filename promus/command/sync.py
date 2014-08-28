@@ -58,12 +58,20 @@ def add_parser(subp, raw):
     tmpp.add_argument('arg', type=str, nargs='*',
                       help='arguments (at most 3)',
                       action=ArgumentAction)
+    tmpp.add_argument('--set-alias', metavar='ALIAS',
+                      dest='mod_alias', default=None,
+                      help="modify the alias of an entry")
 
 
 def run(arg):
     """Run command. """
     if arg.register:
         sync.register(arg.local, arg.remote, arg.alias)
-    config = sync.load_config()
-    for num, _ in enumerate(config):
-        sync.print_entry(config, num)
+    if arg.mod_alias is not None:
+        sync.set_alias(arg.index, arg.mod_alias)
+    if arg.display:
+        config = sync.load_config()
+        for num, _ in enumerate(config):
+            sync.print_entry(config, num)
+        if len(config) == 0:
+            sync.c_warn('No entries to show. see "promus sync -h"')

@@ -88,6 +88,7 @@ def print_entry(config, index):
 def register(local, remote, alias):
     """Register a pair of directories to sync. """
     config = load_config()
+    local = pth.abspath(local)
     if not pth.isdir(local):
         c_error('"%s" does not exist in this machine.' % local)
     if local[-1] != '/':
@@ -107,3 +108,25 @@ def register(local, remote, alias):
     entry_file = pth.expanduser('~/.promus/sync-%d.txt' % (len(config)-1))
     open(entry_file, 'w').close()
     disp(c_msg('B', 'Registration successful. \n'))
+
+
+def set_alias(index, alias):
+    """Modify the alias of an entry. """
+    if index is None:
+        c_error("Need an alias or entry number as argument.")
+    config = load_config()
+    if index.isdigit():
+        index = [int(index)]
+    else:
+        index = [i for i, v in enumerate(config) if v[0] == index]
+    if not index:
+        c_warn("There is no entry to modify.")
+        return
+    for num in index:
+        try:
+            config[num]
+        except IndexError:
+            c_error("Invalid entry number. ")
+        config[num][0] = alias
+        disp(c_msg('B', '%d <==> %s\n' % (num, alias)))
+    dump_config(config)
