@@ -35,8 +35,10 @@ the ``server-alias`` you provided to promus by using::
 
 Once you connect to the server you need to install and setup promus
 there so that you may start creating your first repositories. Please
-remember to always use the same e-mail address you used in your local
-machine.
+remember to use the same e-mail address you used in your local
+machine during the promus setup. You want to make sure that you are
+able to identity yourself to the server and others with your email
+address.
 
 Send a Collaboration Request
 ============================
@@ -89,9 +91,9 @@ Cloning a Repository
 In your local machine now you will want to "clone" or make a copy of
 the repository. This can be done by::
 
-    promus clone <server>:/path/to/repository.git
+    promus clone <host>:/path/to/repository.git
 
-Here ``<server>`` should be replaced by the host you are trying to
+Here ``<host>`` should be replaced by the host you are trying to
 obtain the repository from. The path to the repository is usually
 ``~/git/<repository_name>.git``.
 
@@ -104,5 +106,3 @@ obtain the repository from. The path to the repository is usually
     it you may use the command ``promus search``. This will search
     all possible connections to outside repositories and tell you
     how to make a clone.
-
-

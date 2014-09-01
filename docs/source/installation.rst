@@ -7,6 +7,7 @@ Installation
 Promus depends on other software. First we will go through some of
 the requirements.
 
+
 Requirements
 ============
 
@@ -15,8 +16,10 @@ Requirements
 - Git: You may obtain a copy of ``git`` at
   `http://git-scm.com/downloads <http://git-scm.com/downloads>`_.
 - Pip: To make the installation of promus slightly easier you can use
-  pip. Having this package installed will make the installation of
+  `pip <http://pip.readthedocs.org/en/latest/installing.html#install-pip>`_.
+  Having this package installed will make the installation of
   promus and future packages a breeze.
+
 
 Installing promus
 =================
@@ -52,6 +55,7 @@ After performing this command you will be able to use promus from the
 command line::
 
     promus -h
+
 
 Setting up promus
 =================
