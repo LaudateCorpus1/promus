@@ -105,6 +105,39 @@ def parse_dir(string):
     return [PC.parse_list(tmp[0]), PC.parse_list(tmp[1])]
 
 
+def _set_email(user_list, num, git_users):
+    """Given a list of users, it will replace the specified number by
+    an email address in the git_users dictionary."""
+    found = False
+    for email in git_users:
+        for key in git_users[email]:
+            user_info = git_users[email][key]
+            val = user_list[num]
+            # user_info looks like:
+            # ['user', 'full name', 'alias', 'ssh type', 'comment']
+            if val == user_info[0] or val.lower() in user_info[1].lower():
+                user_list[num] = email
+                found = True
+                break
+        if found:
+            break
+
+
+def _map_acl(acl):
+    """Changes the user names for email addresses. """
+    git_users, _, _ = PC.read_authorized_keys()
+    for i in xrange(0, len(acl['user'])):
+        _set_email(acl['user'], i, git_users)
+    for i in xrange(0, len(acl['admin'])):
+        _set_email(acl['admin'], i, git_users)
+    if len(acl['path']) == 2:
+        for i in range(0, len(acl['path'][1])):
+            _set_email(acl['path'][1], i, git_users)
+    if len(acl['name']) == 2:
+        for i in range(0, len(acl['name'][1])):
+            _set_email(acl['name'][1], i, git_users)
+
+
 def parse_acl(aclstring):
     """Return acl dictionary. The format of the aclstring is as
     follows:
@@ -150,6 +183,7 @@ def parse_acl(aclstring):
             acl[key].extend(PC.parse_list(val))
         elif line.strip() != '':
             return "wrong keyword in line %d" % line_num
+    _map_acl(acl)
     acl['user'] = list(set(acl['user']+acl['admin']))
     return acl
 

@@ -9,7 +9,8 @@ import re
 import os
 import sys
 import socket
-from promus.command import exec_cmd, date
+from glob import iglob
+from promus.command import exec_cmd, date, disp
 from promus.core.ssh import (
     make_key,
     get_keys,
@@ -151,6 +152,9 @@ class Promus(object):
          self.guest_name, self.guest_alias] = info.split(',')
         self.log("GREET>> Connected as %s" % self.guest_email)
         self._get_cmd()
+        if self.cmd_name == 'promus-search-repos':
+            search_repositories(self.guest_email)
+            return
         if self.guest_email == self.master_email:
             self.exec_cmd(self.cmd, True)
         else:
@@ -176,3 +180,14 @@ def exec_git(prs):
     else:
         msg = "EXEC_GIT-ERROR>> not in acl for `%s`" % git_dir
         prs.dismiss(msg, 1)
+
+
+def search_repositories(guest_email):
+    """Search the repositories to which the guest have access in the
+    standard directory. """
+    for repo in iglob('%s/git/*.git' % os.environ['HOME']):
+        acl = read_acl(repo)
+        if isinstance(acl, str):
+            continue
+        if guest_email in acl['user']:
+            disp('  %s\n' % repo.replace(os.environ['HOME'], '~'))
