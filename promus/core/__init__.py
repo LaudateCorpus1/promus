@@ -175,7 +175,7 @@ def exec_git(prs):
     if isinstance(acl, str):
         msg = "EXEC_GIT-ERROR>> acl error: %s" % acl
         prs.dismiss(msg, 1)
-    if prs.guest in acl['user']:  # acl['user'] contains acl['admin']
+    if prs.guest_email in acl['user']:  # acl['user'] contains acl['admin']
         prs.exec_cmd(prs.cmd, True)
     else:
         msg = "EXEC_GIT-ERROR>> not in acl for `%s`" % git_dir
@@ -187,6 +187,9 @@ def search_repositories(guest_email):
     standard directory. """
     for repo in iglob('%s/git/*.git' % os.environ['HOME']):
         acl = read_acl(repo)
+        if config('user.email') == guest_email:
+            disp('  %s\n' % repo.replace(os.environ['HOME'], '~'))
+            continue
         if isinstance(acl, str):
             continue
         if guest_email in acl['user']:

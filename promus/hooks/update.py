@@ -59,6 +59,7 @@ pushed.
 
 """
 
+import os
 import sys
 import promus.core as prc
 from promus.command import exec_cmd
@@ -138,6 +139,7 @@ def map_acl(acl):
 
 def run(prs):
     """Function to execute when the update hook is called. """
+    print(os.environ)
     prs.attend_last()
     acl = prc.read_acl()
     if isinstance(acl, str) and prs.guest_email == prs.master_email:
