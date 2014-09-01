@@ -45,7 +45,7 @@ def add_host(arg):
     master = os.environ['USER']
     master_name = prc.config('user.name')
     alias = prc.config('host.alias')
-    cmd = 'ssh -i {host} {host} ' \
+    cmd = 'ssh -o "IdentitiesOnly yes" -i {host} {host} ' \
           '"{pub},{gitkey},{email},{master},{name},{hostname},{alias}"'
     cmd = cmd.format(host=arg.host, gitkey=gitkey, email=email,
                      master=master, name=master_name, hostname=host,
@@ -55,7 +55,7 @@ def add_host(arg):
     print out
     print err
     if code != 0:
-        error("ERROR: Remote did not accept the request.")
+        error("ERROR: Remote did not accept the request.\n")
     os.remove(arg.host)
     config = prc.read_config()
     found = False
@@ -72,6 +72,7 @@ def add_host(arg):
         config[entry]['HostName'] = host
         config[entry]['User'] = user
         config[entry]['IdentityFile'] = gitkey
+        config[entry]['IdentitiesOnly'] = 'yes'
         prc.write_config(config)
     sys.stderr.write('done...\n')
 

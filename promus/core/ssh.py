@@ -64,6 +64,8 @@ def read_config():
         configf = open('%s/.ssh/config' % os.environ['HOME'], 'r')
     except IOError:
         return config
+    entry = '__GLOBAL__'
+    config[entry] = dict()
     for line in configf:
         line = line.split()
         if not line or line[0] == '#':
@@ -89,7 +91,8 @@ def write_config(config):
         if 'IdentityFile' in config[entry]:
             last.append(entry)
         else:
-            configf.write('Host %s\n' % entry)
+            if entry != '__GLOBAL__':
+                configf.write('Host %s\n' % entry)
             for key in config[entry]:
                 configf.write('    %s %s\n' % (key, config[entry][key]))
             configf.write('\n')
