@@ -1,31 +1,31 @@
-"""Command
+"""COMMAND
 
-Collection of functions to create the command line utility.
+This package is made up of modules to create the command line utility
+and a few important functions.
 
 """
 
-import os
 import sys
-import os.path as pth
-from dateutil import parser
-from datetime import datetime
 from subprocess import Popen, PIPE
 
 
 def error(msg):
     "Print a message to the standard error stream and exit. "
     sys.stderr.write(msg)
+    sys.stderr.flush()
     sys.exit(2)
 
 
 def warn(msg):
     "Print a message to the standard error "
     sys.stderr.write(msg)
+    sys.stderr.flush()
 
 
 def disp(msg):
     "Print a message to the standard output "
     sys.stdout.write(msg)
+    sys.stdout.flush()
 
 
 def import_mod(name):
@@ -49,32 +49,3 @@ def exec_cmd(cmd, verbose=False):
                     stdout=out, stderr=err)
     out, err = process.communicate()
     return out, err, process.returncode
-
-
-# pylint: disable=E1103
-# The reason for this pylint error is that it thinks of
-# `now` as a `tuple` instead of a `datetime` object.
-def date(short=False):
-    "Return the current date as a string. "
-    if isinstance(short, str):
-        now = parser.parse(str(short))
-        return now.strftime("%a %b %d, %Y %r")
-    now = datetime.now()
-    if not short:
-        return now.strftime("%a %b %d, %Y %r")
-    return now.strftime("%Y-%m-%d-%H-%M-%S")
-
-
-def make_dir(path):
-    "Create a directory if it does not exist and return True. "
-    if pth.exists(path):
-        return False
-    os.makedirs(path)
-    return True
-
-
-def append_variable(var, val):
-    """Return a valid bash string to append a value to a variable. """
-    ans = 'if [[ ":$%s:" != *":%s:"* ]]; then\n' % (var, val)
-    ans += '    export %s=%s:$%s\n' % (var, val, var)
-    return ans + 'fi\n'

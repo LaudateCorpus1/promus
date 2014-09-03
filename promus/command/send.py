@@ -1,49 +1,26 @@
-"""Send
-
-Sends a request to add collaborators or to invite collaborators to
-a particular repository.
-
 """
-
-import os
-import sys
-import socket
-import textwrap
-import promus.core.ssh as ssh
-import promus.core.git as git
-import promus.core.util as util
-
-DESC = """
-To be able to collaborate first you need to let your collaborators be
+to be able to collaborate first you need to let your collaborators be
 able to connect to your account. You may do this by sending a request.
 
     promus send request email@hostname 'First Last'
 
-On the other hand, if you already have a collaborator and you have
-added his/her email or username to one of the acls in a repository;
-then you may send them an invite so that they know how to connect to
-the repository.
-
-    promus send invite email@hostname
-
-or
-
-    promus send invite username
-
-Please note that to send an invite you must call the command from the
-repository, i.e. your current working directory must be a repository.
-
 """
+import os
+import socket
+import textwrap
+from promus import send_mail
+from promus.core import git, ssh
+from promus.command import disp
 
 
 def add_parser(subp, raw):
-    "Add a parser to the main subparser. "
-    tmpp = subp.add_parser('send', help='send a request or invite',
+    """Add a parser to the main subparser. """
+    tmpp = subp.add_parser('send', help='send a collaboration request',
                            formatter_class=raw,
-                           description=textwrap.dedent(DESC))
+                           description=textwrap.dedent(__doc__))
     tmpp.add_argument('type', metavar='TYPE', type=str,
-                      choices=['request', 'invite'],
-                      help='One of the following: request, invite')
+                      choices=['request'],
+                      help='One of the following: request')
     tmpp.add_argument('email', type=str,
                       help="collaborators email")
     tmpp.add_argument('name', type=str, nargs='?',
@@ -72,10 +49,11 @@ the command verifying that the connection was successful.
 - Promus
 
 """
-REQUEST_HTML = """<p>Hello {name},</p>
-<p>This email has been generated on behalf of {master} to request for
-your public key. This will give access to future repositories hosted
-by {master} so that you may work as a team.</p>
+REQUEST_HTML = """<p>Hello <strong>{name}</strong>,</p>
+<p>This email has been generated on behalf of <em>{master}</em> to
+request for your public key. This will give access to future
+repositories hosted by <em>{master}</em> so that you may work as a
+team.</p>
 <p>To accomplish this, you will need to have promus installed. If you
 do not have it please visit the following page and take a moment to
 learn the basics of promus.</p>
@@ -109,26 +87,21 @@ def send_request(arg):
     else:
         name = arg.name
     mastername = git.config('user.name')
-    util.send_mail([arg.email],
-                   'Collaboration request from %s' % mastername,
-                   REQUEST_TXT.format(name=name, masteruser=master,
-                                      master=mastername, host=host),
-                   REQUEST_HTML.format(name=name, masteruser=master,
-                                       master=mastername, host=host),
-                   [key])
+    disp('sending request ... ')
+    send_mail([arg.email],
+              'Collaboration request from %s' % mastername,
+              REQUEST_TXT.format(name=name, masteruser=master,
+                                 master=mastername, host=host),
+              REQUEST_HTML.format(name=name, masteruser=master,
+                                  master=mastername, host=host),
+              [key])
     os.remove(key)
-    sys.stdout.write('done...\n')
-
-
-def send_invite(arg):
-    """Sends instructions on how to connect to a repository. """
-    pass
+    disp('done\n')
 
 
 def run(arg):
     """Run command. """
     func = {
         'request': send_request,
-        'invite': send_invite,
     }
     func[arg.type](arg)

@@ -1,19 +1,4 @@
-"""Sync
-
-Using the code from
-
-https://github.com/jmlopez-rod/pysync
-
-to provide a dropbox like functionality.
-
 """
-
-import textwrap
-import argparse
-import promus.core.sync as sync
-from promus.command import disp
-
-DESC = """
 synchronize two directories in a similar fashion as DropBox using
 rsync as the main process to transfer files.
 
@@ -30,6 +15,10 @@ sync entry:
     $ promus sync index/alias
 
 """
+import textwrap
+import argparse
+import promus.core.sync as sync
+from promus.command import disp
 
 
 # pylint: disable=too-few-public-methods
@@ -63,10 +52,10 @@ class ArgumentAction(argparse.Action):
 
 
 def add_parser(subp, raw):
-    "Add a parser to the main subparser. "
+    """Add a parser to the main subparser. """
     tmpp = subp.add_parser('sync', help='sync directories',
                            formatter_class=raw,
-                           description=textwrap.dedent(DESC))
+                           description=textwrap.dedent(__doc__))
     tmpp.add_argument('arg', type=str, nargs='*',
                       help='arguments (at most 3)',
                       action=ArgumentAction)
