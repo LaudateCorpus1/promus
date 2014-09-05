@@ -211,7 +211,8 @@ def _write_nonpromus_entries(unknown, file_obj):
 
 
 def write_authorized_keys(users, pending, unknown):
-    """Rewrite the authorized keys file.
+    """Rewrite the authorized keys file. This also rewrites the
+    users file.
 
     WARNING: This removes any of the comments that you have written
     in the file. All the data is left intact however.
@@ -226,3 +227,4 @@ def write_authorized_keys(users, pending, unknown):
     _write_nonpromus_entries(unknown, akfp)
     akfp.close()
     exec_cmd('chmod 700 %s' % ak_file, True)
+    user.dump_users(users)

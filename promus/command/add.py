@@ -1,29 +1,22 @@
-"""Add
-
-Adds a user if promus is acting as a host or adds a host if promus is
-acting as a client.
-
 """
-
-import os
-import sys
-import socket
-import textwrap
-import promus.core as prc
-from promus.command import exec_cmd, error
-
-DESC = """
 adds a host to your ssh configuration file and sends your public git
 key.
 
 """
 
+import os
+import textwrap
+from promus import send_mail
+from promus.core import ssh
+from promus.command import exec_cmd, disp, error
+from promus.core.user import MASTER
+
 
 def add_parser(subp, raw):
-    "Add a parser to the main subparser. "
+    """Add a parser to the main subparser. """
     tmpp = subp.add_parser('add', help='add a host',
                            formatter_class=raw,
-                           description=textwrap.dedent(DESC))
+                           description=textwrap.dedent(__doc__))
     tmpp.add_argument('type', type=str, metavar='TYPE',
                       choices=['host', 'user'],
                       help='One of the following: host')
@@ -35,60 +28,62 @@ def add_host(arg):
     """Add a new host with the private key that was sent. """
     _, _, code = exec_cmd('chmod 700 %s' % arg.host)
     if code != 0:
-        sys.stderr.write('ERROR: Private key `%s` not found\n' % arg.host)
-        return
-    pub_key = prc.get_public_key(arg.host)
-    _, gitkey = prc.get_keys()
-    gitkey = prc.get_public_key(gitkey)
-    host = socket.gethostname()
-    email = prc.config('user.email')
-    master = os.environ['USER']
-    master_name = prc.config('user.name')
-    alias = prc.config('host.alias')
+        error('ERROR: Private key `%s` not found\n' % arg.host)
+
+    pub_key = ssh.get_public_key(arg.host)
+    _, gitkey = ssh.get_keys()
+    gitkey = ssh.get_public_key(gitkey)
+
     cmd = 'ssh -o "IdentitiesOnly yes" -i {host} {host} ' \
-          '"{pub},{gitkey},{email},{master},{name},{hostname},{alias}"'
-    cmd = cmd.format(host=arg.host, gitkey=gitkey, email=email,
-                     master=master, name=master_name, hostname=host,
-                     alias=alias, pub=pub_key[-20:])
-    sys.stderr.write('Contacting %s ... \n' % arg.host)
-    out, err, code = exec_cmd(cmd)
-    print out
-    print err
+          '"{pub},{gitkey},{email},{user_name},{name},{hostname},{alias}"'
+    cmd = cmd.format(host=arg.host,
+                     gitkey=gitkey,
+                     email=MASTER['email'],
+                     user_name=MASTER['user'],
+                     name=MASTER['name'],
+                     hostname=MASTER['host'],
+                     alias=MASTER['alias'],
+                     pub=pub_key[-20:])
+    disp('Contacting %s ... \n' % arg.host)
+    _, _, code = exec_cmd(cmd, True)
     if code != 0:
         error("ERROR: Remote did not accept the request.\n")
+
     os.remove(arg.host)
-    config = prc.read_config()
+    config = ssh.read_config()
     found = False
+    new_entry = arg.host.replace('@', '-')
     for entry in config:
-        if arg.host.replace('@', '-') in entry.split():
+        if new_entry in entry.split():
             found = True
-            sys.stderr.write('Existing entry: `Host %s`\n' % entry)
+            disp('Existing entry: `Host %s`\n' % entry)
             break
     if not found:
-        _, gitkey = prc.get_keys()
-        entry = '%s' % arg.host.replace('@', '-')
-        config[entry] = dict()
-        user, host = arg.host.split('@')
-        config[entry]['HostName'] = host
-        config[entry]['User'] = user
-        config[entry]['IdentityFile'] = gitkey
-        config[entry]['IdentitiesOnly'] = 'yes'
-        prc.write_config(config)
-    sys.stderr.write('done...\n')
+        config[new_entry] = dict()
+        user_name, host = arg.host.split('@')
+        config[new_entry]['HostName'] = host
+        config[new_entry]['User'] = user_name
+        config[new_entry]['IdentityFile'] = gitkey
+        config[new_entry]['IdentitiesOnly'] = 'yes'
+        ssh.write_config(config)
+    disp('done\n')
 
 
 EMAIL_TXT = """Hello {name},
 
 You public key has been added and you may now connect to {host} as
-{user} using your public key. You may only run git commands however.
+{user} using your public key. You may only run git and other allowed
+commands however. To see which repositories you are allowed to
+connect you can use the promus search command.
 
 - Promus
 
 """
 EMAIL_HTML = """<p>Hello {name},</p>
 <p>You public key has been added and you may now connect to {host} as
-{user} using your public key. You may only run git commands however.
-</p>
+{user} using your public key. You may only run git and other allowed
+commands however. To see which repositories you are allowed to
+connect you can use the promus search command.</p>
 <p>
 <strong>- Promus</strong>
 </p>
@@ -97,40 +92,49 @@ EMAIL_HTML = """<p>Hello {name},</p>
 
 def add_user(_):
     """Add the new user. """
-    # useremail = arg.host
+    # Retrieve guest information
     info = os.environ['SSH_ORIGINAL_COMMAND']
-    pub, key, email, user, username, host, alias = info.split(',')
-    sys.stderr.write('Welcome %s, please wait...\n' % username)
-    users, pending, unknown = prc.read_authorized_keys()
+    pub, key, email, username, name, host, alias = info.split(',')
+    disp('Welcome %s, please wait...\n' % name)
+    users, pending, unknown = ssh.read_authorized_keys()
+
     # Remove access from private key
     for entry in pending:
         if entry[-20:] == pub:
             pub = entry
             break
-    sent_to = pending[pub][0]  # Email must match user email
-    if sent_to != email:
-        error("ERROR: Email mismatch, private key is not \
-              being used by intended recipient.")
+
+    # Email must match user email
+    if pending[pub][0] != email:
+        error("ERROR: Email mismatch, private key is not "
+              "being used by intended recipient.\n")
     del pending[pub]
+
+    # Handle guest
     if email not in users:
         users[email] = dict()
+    entry = key[-10:]
+    if entry not in users[email]:
+        users[email][entry] = dict()
     key_type, key_val = key.split()
-    content = [user,
-               username,
-               alias,
-               key_type,
-               '%s@%s' % (user, host)]
-    users[email][key_val] = content
-    prc.write_authorized_keys(users, pending, unknown)
-    sys.stderr.write('Connection successful ...\n')
-    prc.send_mail([email, prc.config('host.email')],
-                  'Connection successful',
-                  EMAIL_TXT.format(name=username,
-                                   host=socket.gethostname(),
-                                   user=os.environ['USER']),
-                  EMAIL_HTML.format(name=username,
-                                    host=socket.gethostname(),
-                                    user=os.environ['USER']))
+    guest = users[email][entry]
+    guest['user'] = username
+    guest['name'] = name
+    guest['alias'] = alias
+    guest['host'] = host
+    guest['key_type'] = key_type
+    guest['key_desc'] = '%s@%s - git' % (username, alias)
+    guest['key'] = key_val
+    ssh.write_authorized_keys(users, pending, unknown)
+    disp('Connection successful ...\n')
+    send_mail([email, MASTER['email']],
+              'Connection successful',
+              EMAIL_TXT.format(name=name,
+                               host=MASTER['host'],
+                               user=MASTER['user']),
+              EMAIL_HTML.format(name=name,
+                                host=MASTER['host'],
+                                user=MASTER['user']))
 
 
 def run(arg):
