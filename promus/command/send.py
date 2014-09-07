@@ -4,13 +4,23 @@ able to connect to your account. You may do this by sending a request.
 
     promus send request email@hostname 'First Last'
 
+You may also send files to your collaborators who host repositories.
+Note that when the positional argument `TYPE` is file then the
+`email` argument becomes the host to which you want to send the file.
+To see the your git collaborators use `promus show hosts`. Once you
+see the host to which you want to send the file simply do
+
+    promus send file hostname filename
+
 """
 import os
 import socket
 import textwrap
+import os.path as pth
 from promus import send_mail
-from promus.core import git, ssh
-from promus.command import disp
+from promus.core import util, git, ssh
+from promus.core.user import MASTER
+from promus.command import exec_cmd, disp, error
 
 
 def add_parser(subp, raw):
@@ -19,9 +29,9 @@ def add_parser(subp, raw):
                            formatter_class=raw,
                            description=textwrap.dedent(__doc__))
     tmpp.add_argument('type', metavar='TYPE', type=str,
-                      choices=['request'],
-                      help='One of the following: request')
-    tmpp.add_argument('email', type=str,
+                      choices=['request', 'file'],
+                      help='One of the following: request, file')
+    tmpp.add_argument('email', type=str, metavar="EMAIL/HOST",
                       help="collaborators email")
     tmpp.add_argument('name', type=str, nargs='?',
                       help="collaborators name")
@@ -99,9 +109,50 @@ def send_request(arg):
     disp('done\n')
 
 
+def send_file(arg):
+    """Sends a file to the remote host. """
+    # FILE CHECK
+    file_name = arg.name
+    if file_name is None:
+        error("ERROR: provide a file to send.\n")
+    if not pth.exists(file_name):
+        error("ERROR: '%s' does not exists.\n" % file_name)
+    # HOST CHECK
+    _, git_key = ssh.get_keys()
+    config = ssh.read_config()
+    found = False
+    for alias in config:
+        if arg.email not in alias.split():
+            continue
+        try:
+            if config[alias]['IdentityFile'] == git_key:
+                found = True
+                break
+        except KeyError:
+            pass
+    if not found:
+        error("ERROR: not a valid remote host.\n")
+    host = arg.email
+    # MAIN ROUTINE
+    disp("Sending '%s' to '%s' ... \n" % (file_name, host))
+    cmd = 'scp {file_name} {host}:~/promus-box/' \
+          '{email}/[{alias}][{date}]{file_name}'
+    cmd = cmd.format(
+        file_name=file_name,
+        host=host,
+        email=MASTER['email'],
+        alias=MASTER['alias'],
+        date=util.date(True),
+    )
+    _, _, exit_code = exec_cmd(cmd, True)
+    if exit_code != 0:
+        error("ERROR: `scp` failed.\n")
+
+
 def run(arg):
     """Run command. """
     func = {
         'request': send_request,
+        'file': send_file,
     }
     func[arg.type](arg)

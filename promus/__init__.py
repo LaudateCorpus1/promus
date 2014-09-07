@@ -53,7 +53,10 @@ def send_mail(send_to, subject, text, html, files=None):
 
     msg.attach(MIMEText(text, 'plain'))
     htmlmsg = MIMEMultipart()
-    htmlmsg.attach(MIMEText(html, 'html'))
+    if html:
+        htmlmsg.attach(MIMEText(html, 'html'))
+    else:
+        htmlmsg.attach(MIMEText(text, 'plain'))
 
     if files is None:
         files = []

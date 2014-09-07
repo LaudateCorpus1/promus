@@ -20,7 +20,7 @@ def add_parser(subp, raw):
     tmpp = subp.add_parser('show', help='display account status',
                            formatter_class=raw,
                            description=textwrap.dedent(__doc__))
-    tmpp.add_argument('type', type=str, choices=['users', 'keys'],
+    tmpp.add_argument('type', type=str, choices=['users', 'hosts', 'keys'],
                       help='information type')
 
 
@@ -77,10 +77,43 @@ def show_users():
         disp('\n')
 
 
+def show_hosts():
+    """Display the available hosts. """
+    _, git_key = ssh.get_keys()
+    git_hosts = list()
+    hosts = list()
+    config = ssh.read_config()
+    for alias in config:
+        if alias == '*':
+            continue
+        try:
+            if config[alias]['IdentityFile'] == git_key:
+                git_hosts.append(alias)
+            else:
+                hosts.append(alias)
+        except KeyError:
+            hosts.append(alias)
+    disp('[%d] NON-GIT hosts:\n\n' % len(hosts))
+    for host in hosts:
+        host = host.split()
+        if len(host) == 2:
+            disp('    [%s]: %s\n\n' % (host[0], host[1]))
+        else:
+            disp('    %s\n\n' % host[0])
+    disp('[%d] GIT hosts:\n\n' % len(git_hosts))
+    for host in git_hosts:
+        host = host.split()
+        if len(host) == 2:
+            disp('    [%s]: %s\n\n' % (host[0], host[1]))
+        else:
+            disp('    %s\n\n' % host[0])
+
+
 def run(arg):
     """Run command. """
     func = {
         'keys': show_keys,
         'users': show_users,
+        'hosts': show_hosts,
     }
     func[arg.type]()

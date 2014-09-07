@@ -9,7 +9,7 @@ import re
 import socket
 import json
 import os.path as pth
-from promus.core import git
+from promus.core import util, git
 
 MASTER = {
     'user': os.environ['USER'],
@@ -109,7 +109,7 @@ def get_promus_user():
         raise RuntimeError("PROMUS_USER was not set.")
     if 'SSH_ORIGINAL_COMMAND' not in os.environ:
         raise RuntimeError("SSH_ORIGINAL_COMMAND was not set.")
-    email, short_key = os.environ['PROMUS_USER']
+    email, short_key = os.environ['PROMUS_USER'].split(',')
     users = load_users()
     try:
         user = users[email][short_key]
@@ -130,6 +130,6 @@ def get_promus_user():
         promus_user.cmd_ok = False
     else:
         promus_user.cmd_ok = True
-    promus_user.cmd_token = promus_user.cmd.split()
+    promus_user.cmd_token = util.split_at(' ', promus_user.cmd)
     promus_user.cmd_name = promus_user.cmd_token[0]
     return promus_user
