@@ -91,9 +91,39 @@ class User(object):
         return False
 
     def has_access(self, acl):
-        """Checks to see if the user has access to the repository by
-        checking if it is on the acl. """
-        pass
+        """The parameter acl should be a list containing user emails,
+        usernames or names along with the keywords `!allow`, `!deny`
+        and `!all`. For insance:
+
+            ['!deny', '!all', '!allow', 'user1']
+
+        denies access to everyone except user1. The acl
+
+            ['!deny', 'user1', '!allow', 'user2', 'user1]
+
+        gives access to user1 even though it was first explicitly
+        denied.
+
+        By default all acls allow access all users. That is the
+        default action is `!allow`. The keyword `!all` is prefered to
+        be used in all acl to first deny or allow access to all users
+        and then restrict only a few. """
+        action = '!allow'
+        access = True
+        email = self.email.lower()
+        username = self.user.lower()
+        name = self.name.lower()
+        for item in acl:
+            item = item.lower()
+            if item in ['!deny', '!allow']:
+                action = item
+                continue
+            if item in ['!all', email, username] or item in name:
+                if action == '!allow':
+                    access = True
+                else:
+                    access = False
+        return access
 
     def allow_edit(self, acl, path):
         """Checks to see if the user can make an edit to the path
@@ -133,3 +163,15 @@ def get_promus_user():
     promus_user.cmd_token = util.split_at(' ', promus_user.cmd)
     promus_user.cmd_name = promus_user.cmd_token[0]
     return promus_user
+
+
+def get_master_user():
+    """Creates a User object using the information stored in
+    MASTER."""
+    master = User()
+    master.user = MASTER['user']
+    master.name = MASTER['name']
+    master.email = MASTER['email']
+    master.host = MASTER['host']
+    master.alias = MASTER['alias']
+    return master

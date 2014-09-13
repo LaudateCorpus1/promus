@@ -1,53 +1,18 @@
 """Sync Utilities"""
 
 import os
-import sys
 import socket
 import os.path as pth
 from datetime import datetime
 from six.moves import cPickle as pickle
-from promus.command import exec_cmd, disp
-
-COLOR = {
-    'BD': '1',
-    'R': '31',
-    'G': '32',
-    'Y': '33',
-    'B': '34',
-    'M': '35',
-    'C': '36',
-    'BR': '1;31',
-    'BG': '1;32',
-    'BY': '1;33',
-    'BB': '1;34',
-    'BM': '1;35',
-    'BC': '1;36',
-}
-
-
-def c_msg(color, msg):
-    """Return a message in the color specified."""
-    return '\033[%sm%s\033[0m' % (COLOR[color], msg)
-
-
-def c_error(msg):
-    """Print a color message to the standard error stream and exit.
-    """
-    sys.stderr.write(c_msg('BR', 'ERROR: '))
-    sys.stderr.write(c_msg('R', msg+'\n'))
-    sys.exit(2)
-
-
-def c_warn(msg):
-    """Print a color message to the standard error stream.
-    """
-    sys.stderr.write(c_msg('BY', 'WARNING: '))
-    sys.stderr.write(c_msg('Y', msg+'\n'))
-
-
-def c_disp(color, msg):
-    """Print a color message to the stardard output stream. """
-    sys.stdout.write(c_msg(color, msg))
+from promus.command import (
+    exec_cmd,
+    disp,
+    c_msg,
+    c_error,
+    c_disp,
+    c_warn
+)
 
 
 def dump_config(config):
