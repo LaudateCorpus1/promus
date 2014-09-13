@@ -78,6 +78,16 @@ class Promus(object):
             _exec_wrapper(self, token[0])
         self.dismiss('greet', "done", 0)
 
+    def attend_guest(self):
+        """After the greeting is over the connection is still active
+        and several other subprocess get called. This method sets the
+        guest so that promus may know whom it is attending."""
+        try:
+            self.guest = user.get_promus_user()
+        except RuntimeError as exception:
+            msg = "unable to attend guest: {0}"
+            self.dismiss('attend_guest', msg.format(exception.message), 1)
+
 
 def _show_doc(prs, func):
     """Display the documentation for the function."""

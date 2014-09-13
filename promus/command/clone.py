@@ -49,8 +49,21 @@ def user_setup(repo):
         'pre-commit', 'pre-rebase', 'prepare-commit-msg'
     ]
     for hook in hooks:
-        disp("  * %s\n" % hook)
+        disp("    * %s\n" % hook)
         git.make_hook(hook, '{0}/.git/hooks'.format(repo))
+
+
+def store_repo(remote_repo, cloned_repo):
+    """Keep track of the cloned repositories. """
+    repos = git.load_repos()
+    if remote_repo not in repos:
+        repos[remote_repo] = [cloned_repo]
+    else:
+        if cloned_repo not in repos[remote_repo]:
+            repos[remote_repo].append(cloned_repo)
+        updated = [x for x in repos[remote_repo] if pth.exists(x)]
+        repos[remote_repo] = updated
+    git.dump_repos(repos)
 
 
 def run(arg):
@@ -58,10 +71,13 @@ def run(arg):
     repo = arg.repo
     if repo.endswith('/'):
         repo = repo[:-1]
+    if not repo.endswith('.git'):
+        repo += '.git'
     cmd = 'git clone {repo}'.format(repo=repo)
     _, _, exit_code = exec_cmd(cmd, True)
     if exit_code != 0:
         error('ERROR: see above\n')
+    remote_repo = repo
     tmp = pth.split(repo)
     repo = tmp[1].split('.')[0]
     if not pth.exists(pth.join(repo, '.acl')):
@@ -70,3 +86,4 @@ def run(arg):
     if sys.platform in ['Darwin', 'darwin']:
         exec_cmd('open -a /Applications/GitHub.app "%s"' % repo, True)
     disp("'{repo}' has been cloned\n".format(repo=repo))
+    store_repo(remote_repo, pth.abspath(repo))

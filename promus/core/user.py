@@ -125,6 +125,21 @@ class User(object):
                     access = False
         return access
 
+    def has_git_access(self, git_dir):
+        """Determine if the user can access a repository. """
+        try:
+            acl = git.read_acl(git_dir)
+        except git.NoACLException:
+            acl = git.make_acl()
+        email = self.email.lower()
+        username = self.user.lower()
+        name = self.name.lower()
+        for item in acl['user']:
+            item = item.lower()
+            if item in [email, username] or item in name:
+                return True
+        return False
+
     def allow_edit(self, acl, path):
         """Checks to see if the user can make an edit to the path
         based on the values on the acl. """

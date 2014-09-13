@@ -1,24 +1,18 @@
-"""Search
-
-Search for remote repositories.
+"""
+search for remote repositories and commands available from the remote
+hosts.
 
 """
-
 import textwrap
-import promus.core as prc
+from promus.core import ssh
 from promus.command import exec_cmd, disp
-
-DESC = """
-searches for remote repositories.
-
-"""
 
 
 def add_parser(subp, raw):
-    "Add a parser to the main subparser. "
+    """Add a parser to the main subparser. """
     tmpp = subp.add_parser('search', help='search for repositories',
                            formatter_class=raw,
-                           description=textwrap.dedent(DESC))
+                           description=textwrap.dedent(__doc__))
     tmpp.add_argument('host', type=str, nargs="?", default='',
                       help='search in the given host')
 
@@ -29,7 +23,7 @@ def get_accessible_repos(host):
     cmd = 'ssh %s promus-search-repos' % host
     out, err, _ = exec_cmd(cmd)
     if err.startswith('ssh'):
-        disp('  ssh error: try ssh to the host manually\n\n')
+        disp('  ssh error: try to ssh to the host manually\n\n')
     elif out == '':
         disp('  no repositories found\n\n')
     else:
@@ -39,8 +33,8 @@ def get_accessible_repos(host):
 
 def run(arg):
     """Run command. """
-    _, git_key = prc.get_keys()
-    config = prc.read_config()
+    _, git_key = ssh.get_keys()
+    config = ssh.read_config()
     for alias in config:
         if arg.host not in alias:
             continue

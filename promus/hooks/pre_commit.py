@@ -37,7 +37,7 @@ from promus.command import exec_cmd
 import promus.core as prc
 
 
-ADMIN_FILES = ['.acl', '.description', '.bashrc', '.gitignore']
+ADMIN_FILES = ['.acl']
 MSG = 'PRE-COMMIT>> You do not have access to modify "%s"'
 MSG_ADMIN = 'PRE-COMMIT>> You must be an admin to modify "%s"'
 

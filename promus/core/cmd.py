@@ -2,7 +2,7 @@
 
 Provides several functions to execute on behalf of the git user. This
 functionality is extendible and can be added on the file
-`~/.promus/commands.py`.
+`~/.promus/cmd.py`.
 
 NOTE: Quotes must be escaped.
 
@@ -11,7 +11,7 @@ import socket
 import promus
 import os.path as pth
 from imp import load_source
-from promus.core import util, user
+from promus.core import util, user, git
 from promus.command import disp, exec_cmd
 
 
@@ -101,13 +101,41 @@ file
 """
 
 
+def exec_git(prs):
+    """Execute git commands. """
+    guest = prs.guest
+    git_dir = pth.expanduser(guest.cmd_token[1][1:-1])
+    try:
+        access = guest.has_git_access(git_dir)
+    except git.ACLException as exception:
+        prs.dismiss("exec_git", "acl error: %s" % exception.message, 1)
+    if access:
+        exec_cmd(guest.cmd, True)
+    else:
+        prs.dismiss("exec_git", "no access to %s" % git_dir, 1)
+
+
 def say_hi(prs, msg):
     """Test function, a guest will send a message. """
     disp('Hi %s, your message was: %s\n' % (prs.guest.name, msg))
 
 
 CMD_MAP = {
-    'scp': (exec_scp, ['!allow', '!all']),
+    'scp': (
+        exec_scp,
+        ['!allow', '!all'],
+        'send and recieve files through `scp`'
+    ),
+    'git-receive-pack': (
+        exec_git,
+        ['!allow', '!all'],
+        'a command issued by `git`'
+    ),
+    'git-upload-pack': (
+        exec_git,
+        ['!allow', '!all'],
+        'a command issued by `git`'
+    )
 }
 PY_MAP = {
     'say_hi': (say_hi, ['!allow', 'all']),

@@ -4,10 +4,32 @@ In this package we can find functions designed to obtain information
 from a git repository.
 
 """
-from os.path import exists, basename
+import json
+import os.path as pth
 from fnmatch import fnmatch
 from promus.command import exec_cmd
 from promus.core import util
+
+
+class ACLException(Exception):
+    """Raised when parsing an ACL string. """
+    pass
+
+
+class NoACLException(Exception):
+    """Raised solely when the git repository cannot find the acl
+    file. """
+    pass
+
+
+class ProfileException(Exception):
+    """Raised when parsing a profile string. """
+    pass
+
+
+class NoProfileException(Exception):
+    """Raised when the git repository cannot find a guest profile. """
+    pass
 
 
 def config(entry, val=None, global_setting=True):
@@ -56,21 +78,20 @@ def remote_path():
 
 HOOK_TEMPLATE = '''#!/usr/bin/env python
 """{hook} hook generated on {date}"""
-import promus.core as prc
+from promus.core import Promus
 import promus.hooks.{hookpy} as hook
 
 if __name__ == "__main__":
-    PRS = prc.Promus()
+    PRS = Promus()
     hook.run(PRS)
-    PRS.dismiss("{hook}>> done...", 0)
-
+    PRS.dismiss("{hook}", "done", 0)
 '''
 
 
 def make_hook(hook, path):
     "Creates the specified hook. "
     hook_file = "%s/%s" % (path, hook)
-    if exists(hook_file):
+    if pth.exists(hook_file):
         cmd = "mv %s %s.%s" % (hook_file, hook_file, util.date(True))
         exec_cmd(cmd, True)
     hookpy = hook.replace('-', '_')
@@ -81,43 +102,16 @@ def make_hook(hook, path):
     exec_cmd('chmod +x %s' % hook_file, True)
 
 
-def parse_dir(string):
-    "Return two lists, one with directories and one with users. "
-    tmp = string.split('|')
-    return [util.split_at(',', tmp[0]), util.split_at(',', tmp[1])]
-
-
-def _set_email(user_list, num, git_users):
-    """Given a list of users, it will replace the specified number by
-    an email address in the git_users dictionary."""
-    found = False
-    for email in git_users:
-        for key in git_users[email]:
-            user_info = git_users[email][key]
-            val = user_list[num]
-            # user_info looks like:
-            # ['user', 'full name', 'alias', 'ssh type', 'comment']
-            if val == user_info[0] or val.lower() in user_info[1].lower():
-                user_list[num] = email
-                found = True
-                break
-        if found:
-            break
-
-
-def _map_acl(acl):
-    """Changes the user names for email addresses. """
-    git_users, _, _ = PC.read_authorized_keys()
-    for i in xrange(0, len(acl['user'])):
-        _set_email(acl['user'], i, git_users)
-    for i in xrange(0, len(acl['admin'])):
-        _set_email(acl['admin'], i, git_users)
-    if len(acl['path']) == 2:
-        for i in range(0, len(acl['path'][1])):
-            _set_email(acl['path'][1], i, git_users)
-    if len(acl['name']) == 2:
-        for i in range(0, len(acl['name'][1])):
-            _set_email(acl['name'][1], i, git_users)
+def make_acl():
+    """Returns a git acl with the promus master as the only admin.
+    This dictionary needs to be passed to other functions so that it
+    may be updated with the information in the repositories acls."""
+    acl = dict()
+    acl['admin'] = [config('user.email')]
+    acl['user'] = [config('user.email')]
+    acl['path'] = list()
+    acl['name'] = list()
+    return acl
 
 
 def parse_acl(aclstring):
@@ -134,55 +128,57 @@ def parse_acl(aclstring):
     paths. Some files are only accessible to the admin but the admin
     may provide access to other users by listing the path (relative
     to the git repository) and using the keyword !allow. """
-    acl = dict()
-    acl['admin'] = list()
-    acl['user'] = list()
-    acl['path'] = list()
-    acl['name'] = list()
+    acl = make_acl()
     line_num = 0
     for line in aclstring.split('\n'):
+        line = line.strip()
         line_num += 1
-        if line.strip() == '' or line[0] == '#':
+        if line == '' or line[0] == '#':
             continue
         try:
             key, val = line.split(':')
             key = key.strip().lower()
         except ValueError:
-            return "wrong number of ':' in line %d" % line_num
+            err_msg = "wrong number of ':' in line %d" % line_num
+            raise ACLException(err_msg)
         if key in ['admin', 'user']:
-            acl[key].extend(PC.parse_list(val))
+            acl[key].extend(util.split_at(',', val))
         elif key in ['path', 'name']:
             try:
-                acl[key].extend(parse_dir(val))
+                tmp = val.split('|')
+                files = util.split_at(',', tmp[0])
+                users = util.split_at(',', tmp[1])
+                acl[key].extend([files, users])
             except IndexError:
-                return "'|' not found in line %d" % line_num
-        elif key == 'rsync':
-            acl[key].extend(PC.parse_list(val))
-        elif line.strip() != '':
-            return "wrong keyword in line %d" % line_num
-    _map_acl(acl)
+                err_msg = "'|' not found in line %d" % line_num
+                raise ACLException(err_msg)
+        else:
+            err_msg = "wrong keyword in line %d" % line_num
+            raise ACLException(err_msg)
+    acl['admin'] = list(set(acl['admin']))
     acl['user'] = list(set(acl['user']+acl['admin']))
     return acl
 
 
 def check_acl(aclfile):
-    "Attempts to read the acl file to see if it contains any errors. "
+    """Attempts to read the acl file to see if it contains any
+    errors. """
     try:
         aclfile = open(aclfile, 'r').read()
     except IOError:
-        return "no such file: '%s'" % aclfile
+        raise NoACLException("acl not found: '%s'" % aclfile)
     return parse_acl(aclfile)
 
 
 def read_acl(git_dir=None):
-    "Read acl from the git repository."
+    """Read acl from the git repository."""
     if git_dir:
         cmd = 'cd %s; git show HEAD:.acl' % git_dir
     else:
         cmd = 'git show HEAD:.acl'
-    aclfile, err, _ = exec_cmd(cmd, False)
+    aclfile, err, _ = exec_cmd(cmd)
     if err:
-        return "while executing `git show HEAD:.acl`: %s" % err[:-1]
+        raise NoACLException(err[:-1])
     return parse_acl(aclfile)
 
 
@@ -222,7 +218,7 @@ def parse_profile(profilestring):
             else:
                 return "Notify options allowed: all/false/track"
         elif key == 'track-files':
-            profile[key].extend(PC.parse_list(val))
+            profile[key].extend(util.split_at(',', val))
         elif line.strip() != '':
             return "wrong keyword in line %d" % line_num
     return profile
@@ -258,32 +254,37 @@ def file_in_path(file_name, paths):
     return False
 
 
-def has_access(user, users):
-    """A list of users should look as follows: ['!deny', 'user1',
-    'user2'] This means that user1 and user2 have deny access. If we
-    have something longer such as ['!deny', 'user1', '!allow',
-    'user2'] then user2 has access but user1 does not have access. If
-    no keywords are found then it returns None if the user is in the
-    list. """
-    if user not in users:
-        return None
-    rusers = users[::-1]
-    try:
-        action = next(x[1] for x in enumerate(rusers) if x[1][0] == '!')
-    except StopIteration:
-        return None
-    if action == '!allow':
-        return True
-    if action == '!deny':
-        return False
-    return False
-
-
 def file_match(file_name, names):
     """Checks the name of the file matches anything in the list of
     names. """
-    fname = basename(file_name)
+    fname = pth.basename(file_name)
     for name in names:
         if fnmatch(fname, name):
             return True
     return False
+
+
+def load_repos():
+    """Obtain the cloned git repositories. """
+    try:
+        file_obj = open(pth.expanduser('~/.promus/repos'), 'r')
+    except IOError:
+        return dict()
+    try:
+        repos = json.load(file_obj)
+    except ValueError:
+        return dict()
+    file_obj.close()
+    return repos
+
+
+def dump_repos(repos):
+    """Store the git repositories. """
+    with open(pth.expanduser('~/.promus/repos'), 'w') as fp_:
+        json.dump(
+            repos,
+            fp_,
+            sort_keys=True,
+            indent=4,
+            separators=(',', ': ')
+        )
