@@ -140,8 +140,13 @@ def map_acl(acl):
 def run(prs):
     """Function to execute when the update hook is called. """
     print(os.environ)
-    prs.attend_last()
+    prs.attend_guest()
+    
+    
+    
     acl = prc.read_acl()
+    
+    
     if isinstance(acl, str) and prs.guest_email == prs.master_email:
         prs.dismiss("update>> Welcome %s, first time commiting?" % prs.master_email, 0)
     if isinstance(acl, str):

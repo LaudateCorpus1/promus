@@ -1,0 +1,36 @@
+{
+    "user1@host": {
+        "E8bRDCwaQF": {
+            "name": "Manuel Lopez",
+            "user": "jmlopez"
+        },
+        "xiAeSZcosZ": {
+            "name": "Manuel Lopez",
+            "user": "user1"
+        }
+    },
+    "user2@host": {
+        "QORhEJd2W1": {
+            "name": "Chinmaya Gupta",
+            "user": "user2"
+        }
+    },
+    "user3@host": {
+        "QORhEJd2W1": {
+            "name": "William Ott",
+            "user": "user3"
+        }
+    },
+    "user4@host": {
+        "QORhEJd2W1": {
+            "name": "Kresimir Josic",
+            "user": "user4"
+        }
+    },
+    "user5@host": {
+        "QORhEJd2W1": {
+            "name": "Daisy Cherian",
+            "user": "user5"
+        }
+    }
+}

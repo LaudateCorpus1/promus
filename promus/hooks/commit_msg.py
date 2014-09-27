@@ -90,6 +90,7 @@ def get_msg_info(prs, commit_msg_file):
 
 def run(prs):
     """Function to execute when the update hook is called. """
+    prs.attend_master()
     commit_msg_file = sys.argv[1]
     title, description = get_msg_info(prs, commit_msg_file)
     # You may examine and modify the title and description here.

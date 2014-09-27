@@ -7,9 +7,8 @@ key.
 import os
 import textwrap
 from promus import send_mail
-from promus.core import ssh
+from promus.core import ssh, MASTER
 from promus.command import exec_cmd, disp, error
-from promus.core.user import MASTER
 
 
 def add_parser(subp, raw):

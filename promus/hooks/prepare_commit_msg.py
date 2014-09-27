@@ -48,8 +48,9 @@ MSG = """
 
 """
 
-def run(_):
+def run(prs):
     """Function to execute when the prepare-commit-msg hook is called. """
+    prs.attend_master()
     commit_msg_file = sys.argv[1]
     with open(commit_msg_file, 'r') as msgf:
         default_text = msgf.read()

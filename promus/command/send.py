@@ -18,8 +18,7 @@ import socket
 import textwrap
 import os.path as pth
 from promus import send_mail
-from promus.core import util, git, ssh
-from promus.core.user import MASTER
+from promus.core import util, git, ssh, MASTER
 from promus.command import exec_cmd, disp, error
 
 

@@ -11,7 +11,7 @@ import socket
 import promus
 import os.path as pth
 from imp import load_source
-from promus.core import util, user, git
+from promus.core import util, git, MASTER
 from promus.command import disp, exec_cmd
 
 
@@ -47,8 +47,8 @@ def exec_scp(prs):
     if token[1] == '-t':
         prs.log('exec_scp', 'receiving ... ')
         msg = exec_scp.success_msg.format(
-            master_name=user.MASTER['name'],
-            master_host=user.MASTER['host'],
+            master_name=MASTER['name'],
+            master_host=MASTER['host'],
             guest_name=guest.name,
             action='sent you',
             file_name=file_name,
@@ -59,8 +59,8 @@ def exec_scp(prs):
     elif token[1] == '-f':
         prs.log('exec_scp', 'sending ... ')
         msg = exec_scp.success_msg.format(
-            master_name=user.MASTER['name'],
-            master_host=user.MASTER['host'],
+            master_name=MASTER['name'],
+            master_host=MASTER['host'],
             guest_name=guest.name,
             action='received',
             file_name=file_name,
@@ -70,17 +70,17 @@ def exec_scp(prs):
         )
     _, _, exit_code = exec_cmd(guest.cmd, True)
     if exit_code == 0:
-        prs.log('exec_scp', 'notifying %s ... ' % user.MASTER['name'])
+        prs.log('exec_scp', 'notifying %s ... ' % MASTER['name'])
         try:
             promus.send_mail(
-                [user.MASTER['email']],
+                [MASTER['email']],
                 'File transfer successful',
                 msg,
                 None
             )
         except socket.gaierror:
             prs.dismiss('exec_scp', 'unable to send email', 1)
-        prs.log('exec_scp', 'email sent to %r' % user.MASTER['email'])
+        prs.log('exec_scp', 'email sent to %r' % MASTER['email'])
     else:
         prs.dismiss('exec_scp', 'exit code %r ... ' % exit_code, 1)
 

@@ -136,3 +136,11 @@ def strip(msg):
         return msg.strip()
     except AttributeError:
         return None
+
+
+def read_file(fname, mode="r"):
+    """Utility function to read the contents of a file."""
+    file_obj = open(fname, mode)
+    contents = file_obj.read()
+    file_obj.close()
+    return contents

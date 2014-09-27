@@ -4,6 +4,7 @@ In this package we can find functions designed to obtain information
 from a git repository.
 
 """
+import six
 import json
 import os.path as pth
 from fnmatch import fnmatch
@@ -102,84 +103,204 @@ def make_hook(hook, path):
     exec_cmd('chmod +x %s' % hook_file, True)
 
 
-def make_acl():
-    """Returns a git acl with the promus master as the only admin.
-    This dictionary needs to be passed to other functions so that it
-    may be updated with the information in the repositories acls."""
-    acl = dict()
-    acl['admin'] = [config('user.email')]
-    acl['user'] = [config('user.email')]
-    acl['path'] = list()
-    acl['name'] = list()
-    return acl
+class GitAuthorizer(object):
+    """Create an object to aprove access to a git repository. """
 
+    def __init__(self):
+        self.admin = list()
+        self.user = dict()
+        self.team = dict()
+        self.host_users = dict()
 
-def parse_acl(aclstring):
-    """Return acl dictionary. The format of the aclstring is as
-    follows:
-
-        admin: user1
-        user: user2, user3, user4
-        path: dir1, dir2 | !deny, user3, user4
-        name: file1 | !allow, user2
-
-    Everyone will have access to the files in the repository. If more
-    control is needed we can deny access to some paths by listing the
-    paths. Some files are only accessible to the admin but the admin
-    may provide access to other users by listing the path (relative
-    to the git repository) and using the keyword !allow. """
-    acl = make_acl()
-    line_num = 0
-    for line in aclstring.split('\n'):
-        line = line.strip()
-        line_num += 1
-        if line == '' or line[0] == '#':
-            continue
+    def load_users(self, user_file):
+        """Read the specified file and populate the attribute
+        `host_users`."""
         try:
-            key, val = line.split(':')
-            key = key.strip().lower()
+            file_obj = open(pth.expanduser(user_file), 'r')
+        except IOError:
+            return self.host_users
+        try:
+            self.host_users = json.load(file_obj)
         except ValueError:
-            err_msg = "wrong number of ':' in line %d" % line_num
+            return self.host_users
+        file_obj.close()
+        return self.host_users
+
+    def get_user_email(self, key):
+        """Return a users valid email. If no email is found then
+        return None. """
+        for email, item in six.iteritems(self.host_users):
+            if key == email:
+                return email
+            for _, prop in six.iteritems(item):
+                if key == prop['user'] or key in prop['name'].lower():
+                    return email
+        return None
+
+    def _update_admin_list(self, val):
+        """Helper method for parse_acl. """
+        admins = util.split_at(',', val)
+        for item in admins:
+            admin = self.get_user_email(item.strip())
+            if admin and admin not in self.admin:
+                self.admin.append(admin)
+
+    def _update_user_list(self, val):
+        """Helper method for parse_acl. """
+        users = util.split_at(',', val)
+        for item in users:
+            email = self.get_user_email(item.strip())
+            if email and email not in self.user:
+                self.user[email] = list()
+
+    def _update_team_list(self, val, line_num):
+        """Helper method for parse_acl. """
+        try:
+            tmp = val.split('|')
+            teams = util.split_at(',', tmp[0])
+            users = util.split_at(',', tmp[1])
+        except IndexError:
+            err_msg = "'|' not found in line %d" % line_num
             raise ACLException(err_msg)
-        if key in ['admin', 'user']:
-            acl[key].extend(util.split_at(',', val))
-        elif key in ['path', 'name']:
+        emails = list()
+        for item in users:
+            email = self.get_user_email(item.strip())
+            if email and email not in emails:
+                emails.append(email)
+        for team_name in teams:
+            self.team[team_name.strip()] = emails
+
+    def _update_user_pattern(self, email, action, patterns):
+        """Helper method for _update_user_access. """
+        for pattern in patterns:
+            self.user[email].append((pattern.strip(), action == '!allow'))
+
+    def _update_user_access(self, val, line_num):
+        """Helper method for parse_acl. """
+        try:
+            tmp = val.split('|')
+            patterns = util.split_at(',', tmp[0])
+            users = util.split_at(',', tmp[1])
+        except IndexError:
+            err_msg = "'|' not found in line %d" % line_num
+            raise ACLException(err_msg)
+        action = '!allow'
+        for item in users:
+            item = item.strip().lower()
+            if item in ['!deny', '!allow']:
+                action = item
+                continue
+            if item == '!all':
+                for email in self.user:
+                    self._update_user_pattern(email, action, patterns)
+            elif item.startswith('!team:'):
+                team_name = item[6:]
+                if team_name not in self.team:
+                    continue
+                for email in self.team[team_name]:
+                    self._update_user_pattern(email, action, patterns)
+            else:
+                email = self.get_user_email(item)
+                if email:
+                    self._update_user_pattern(email, action, patterns)
+
+    def parse_acl(self, aclstring):
+        """The format of the aclstring is as follows:
+
+            admin: user1
+            user: user2, user3, user4, user5
+            team: red | user2, user3
+            team: blue | user4, user5
+            name: * | !deny, !all
+            name: dir1/*, dir2/* | !allow, user2, user4
+            name: dir1/*.html | !allow, user3, user5
+            name: *.tex | !allow, !team:red
+            name: *.md | !allow, !team:blue
+
+        This allow us to specify the users for a repository and to
+        give more control over the files. By default all the users
+        are allowed to modify the files. In the example above we
+        first deny access to all files to all the users. Then we
+        selectively assign access to the files. The opposite can be
+        done as well. This function must be called before we can ask
+        the GitAuthorizer if a user has access or not. """
+        self.admin = list()
+        self.user = dict()
+        line_num = 0
+        for line in aclstring.split('\n'):
+            line = line.strip()
+            line_num += 1
+            if line == '' or line[0] == '#':
+                continue
             try:
-                tmp = val.split('|')
-                files = util.split_at(',', tmp[0])
-                users = util.split_at(',', tmp[1])
-                acl[key].extend([files, users])
-            except IndexError:
-                err_msg = "'|' not found in line %d" % line_num
+                key, val = line.split(':', 1)
+                key = key.strip().lower()
+                val = val.lower()
+            except ValueError:
+                err_msg = "wrong number of ':' in line %d" % line_num
                 raise ACLException(err_msg)
+            if key == 'admin':
+                self._update_admin_list(val)
+            elif key == 'user':
+                self._update_user_list(val)
+            elif key == 'team':
+                self._update_team_list(val, line_num)
+            elif key == 'name':
+                self._update_user_access(val, line_num)
+            else:
+                err_msg = "wrong keyword in line %d" % line_num
+                raise ACLException(err_msg)
+
+    def has_access(self, user, mod_file=None, sudo=None):
+        """Determine if the user can access a repository. When
+        specifying the third parameter it checks if the user can
+        modify the file. """
+        if isinstance(user, six.string_types):
+            email = self.get_user_email(user)
         else:
-            err_msg = "wrong keyword in line %d" % line_num
-            raise ACLException(err_msg)
-    acl['admin'] = list(set(acl['admin']))
-    acl['user'] = list(set(acl['user']+acl['admin']))
-    return acl
+            try:
+                email = user.email
+            except AttributeError:
+                return False
+        if email in self.admin:
+            return True
+        access = False
+        if email in self.user:
+            access = True
+        if access is False or mod_file is None:
+            return access
+        if sudo is None:
+            sudo = ['.acl']
+        for fname in sudo:
+            if fnmatch(mod_file, fname):
+                access = False
+        for pattern, value in self.user[email]:
+            if fnmatch(mod_file, pattern):
+                access = value
+        return access
+
+    def read_acl(self, git_dir=None):
+        """Read acl from the git repository."""
+        if git_dir:
+            cmd = 'cd %s; git show HEAD:.acl' % git_dir
+        else:
+            cmd = 'git show HEAD:.acl'
+        aclfile, err, _ = exec_cmd(cmd)
+        if err:
+            raise NoACLException(err[:-1])
+        return self.parse_acl(aclfile)
 
 
 def check_acl(aclfile):
     """Attempts to read the acl file to see if it contains any
     errors. """
     try:
-        aclfile = open(aclfile, 'r').read()
+        aclfile = util.read_file(aclfile)
     except IOError:
         raise NoACLException("acl not found: '%s'" % aclfile)
-    return parse_acl(aclfile)
-
-
-def read_acl(git_dir=None):
-    """Read acl from the git repository."""
-    if git_dir:
-        cmd = 'cd %s; git show HEAD:.acl' % git_dir
-    else:
-        cmd = 'git show HEAD:.acl'
-    aclfile, err, _ = exec_cmd(cmd)
-    if err:
-        raise NoACLException(err[:-1])
-    return parse_acl(aclfile)
+    git_authorizer = GitAuthorizer()
+    git_authorizer.load_users('~/.promus/users')
+    git_authorizer.parse_acl(aclfile)
 
 
 def parse_profile(profilestring):

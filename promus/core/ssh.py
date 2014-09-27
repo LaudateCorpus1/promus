@@ -11,7 +11,7 @@ import shutil
 import os.path as pth
 from collections import OrderedDict
 from promus.command import exec_cmd
-from promus.core import util, git, user
+from promus.core import util, git, load_users, dump_users
 
 RE_USER_0 = re.compile('command="python -m promus greet '
                        '\'(?P<email>.*?),(?P<user>.*?),'
@@ -124,7 +124,7 @@ def read_authorized_keys():
     found in the ssh authorized_keys files (if any). Returns the user
     dictionary, the pending requests and the entries not managed by
     promus. """
-    users = user.load_users()
+    users = load_users()
     modified = False
     pending = OrderedDict()
     unknown = list()
@@ -167,7 +167,7 @@ def read_authorized_keys():
             unknown.append(line)
     file_obj.close()
     if modified:
-        user.dump_users(users)
+        dump_users(users)
     return users, pending, unknown
 
 
@@ -227,4 +227,4 @@ def write_authorized_keys(users, pending, unknown):
     _write_nonpromus_entries(unknown, akfp)
     akfp.close()
     exec_cmd('chmod 700 %s' % ak_file, True)
-    user.dump_users(users)
+    dump_users(users)

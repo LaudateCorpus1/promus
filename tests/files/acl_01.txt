@@ -1,0 +1,10 @@
+admin: user1
+user: user2, user3, user4, user5
+team: red, rojo | user2, user3
+team: blue | user4, daisy
+name: * | !deny, !all
+name: dir1/*, dir2/* | !allow, user2, user4
+name: dir1/*.html | !allow, user3, user5
+name: *.tex | !allow, !team:red
+name: *.md | !allow, !team:blue
+name: .acl | !allow, user5@host

@@ -34,59 +34,37 @@ commit message.
 """
 
 from promus.command import exec_cmd
-import promus.core as prc
+from promus.core import git, user
 
-
-ADMIN_FILES = ['.acl']
+HOOK = 'pre_commit'
 MSG = 'PRE-COMMIT>> You do not have access to modify "%s"'
 MSG_ADMIN = 'PRE-COMMIT>> You must be an admin to modify "%s"'
 
 
-def zip_list(acl, key):
-    "Zip the list to handle two items at a time. "
-    return zip(acl[key][0::2], acl[key][1::2])
-
-
-def check_names(acl, user, mod_file):
-    "Checks mod_file against the acl names. "
-    has_access = None
-    for names, users in zip_list(acl, 'name'):
-        if prc.file_match(mod_file, names):
-            has_access = prc.has_access(user, users)
-            break
-    return has_access
-
-
-def check_paths(acl, user, mod_file):
-    "Checks mod_file against the acl paths. "
-    has_access = None
-    for paths, users in zip_list(acl, 'path'):
-        if prc.file_in_path(mod_file, paths):
-            has_access = prc.has_access(user, users)
-            break
-    return has_access
-
-
 def run(prs):
     """Function to execute when the pre-commit hook is called. """
-    acl = prc.read_acl(prc.local_path())
-    if isinstance(acl, str):
-        prs.dismiss("PRE-COMMIT>> Skipping due to acl error: %s" % acl, 0)
-    out, _, _ = exec_cmd("git diff-index --cached --name-only HEAD")
-    user = prs.master
-    user_files = ['.%s.profile' % usr for usr in acl['user']]
-    for mod_file in out.split('\n'):
+    prs.attend_master()
+    guest = prs.guest
+    access = guest.has_git_access(git.local_path())
+    user_files = ['.%s.profile' % x for x in guest.acl['user']]
+    admin_files = ['.acl']
+    files, _, _ = exec_cmd("git diff-index --cached --name-only HEAD")
+    for mod_file in files.split('\n'):
+        mod_file = mod_file.strip()
         if mod_file == '':
             continue
-        if mod_file in ADMIN_FILES:
-            if user in acl['admin']:
-                if mod_file == '.acl':
-                    tmp = prc.check_acl("%s/.acl" % prc.local_path())
-                    if isinstance(tmp, str):
-                        prs.dismiss("PRE-COMMIT>> acl error: %s" % tmp, 1)
+        if mod_file in user_files:
+            if mod_file == '.%s.profile' % user or user in acl['admin']:
+                tmp = prc.check_profile("%s/.%s.profile" % (prc.local_path(),
+                                                            user))
+                if isinstance(tmp, str):
+                    prs.dismiss("PRE-COMMIT>> profile error: %s" % tmp, 1)
                 continue
             else:
-                prs.dismiss(MSG_ADMIN % mod_file, 1)
+                prs.dismiss(MSG % mod_file, 1)
+        
+        access = guest.has_git_access(None, mod_file, admin_files)
+
         if mod_file in user_files:
             if mod_file == '.%s.profile' % user or user in acl['admin']:
                 tmp = prc.check_profile("%s/.%s.profile" % (prc.local_path(),
