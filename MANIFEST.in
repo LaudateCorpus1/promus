@@ -1,6 +1,7 @@
 recursive-include docs *
 recursive-include promus *.py
-recursive-include promus_gui *.py *.lex *.html *.less *.js *.css *.json
+recursive-include promus_gui *.py *.lex
+recursive-include promus_gui/static *
 include MANIFEST.in
 include README.rst
 include Makefile
