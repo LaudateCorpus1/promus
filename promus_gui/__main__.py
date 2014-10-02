@@ -30,6 +30,14 @@ def hello():
     return str(doc)
 
 
+@APP.route("/keys")
+def show_keys():
+    """Testing function. """
+    doc, _ = lexor.lexor(BASE_DIR+"/app/keys.lex")
+    doc.lang = 'html'
+    return str(doc)
+
+
 def parse_options():
     """Interpret the command line inputs and options. """
     desc = """
