@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+"""
+promus-gui: Command Line Script
+===============================
+
+To see usage run "promus-gui -h".
+
+"""
+
+if __name__ == '__main__':
+    from promus_gui.__main__ import run
+    run()

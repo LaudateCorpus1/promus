@@ -69,7 +69,7 @@ def get_msg_info_strict(prs, commit_msg_file):
 
 def get_msg_info(prs, commit_msg_file):
     """Read the file COMMITMSG provided by git and extract the title
-    and description of the commit message. It exists with 1 if it
+    and description of the commit message. It exits with 1 if it
     does not find one. """
     with open(commit_msg_file, 'r') as msgf:
         msg = msgf.read()

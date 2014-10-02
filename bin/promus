@@ -6,10 +6,6 @@ promus: Command Line Script
 
 To see usage run "promus -h".
 
-Author: [Manuel Lopez](http://jmlopez-rod.github.io/)
-Contact: jmlopez.rod@gmail.com
-Copyright 2013 Jose Manuel Lopez
-
 """
 
 if __name__ == '__main__':

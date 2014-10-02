@@ -196,13 +196,17 @@ class GitAuthorizer(object):
             elif item.startswith('!team:'):
                 team_name = item[6:]
                 if team_name not in self.team:
-                    continue
+                    err_msg = "%r team has not been declared" % team_name
+                    raise ACLException(err_msg)
                 for email in self.team[team_name]:
                     self._update_user_pattern(email, action, patterns)
             else:
                 email = self.get_user_email(item)
                 if email:
                     self._update_user_pattern(email, action, patterns)
+                else:
+                    err_msg = "%r is not a valid user" % item
+                    raise ACLException(err_msg)
 
     def parse_acl(self, aclstring):
         """The format of the aclstring is as follows:
@@ -323,13 +327,15 @@ def parse_profile(profilestring):
     line_num = 0
     for line in profilestring.split('\n'):
         line_num += 1
-        if line.strip() == '' or line[0] == '#':
+        line = line.strip()
+        if line == '' or line[0] == '#':
             continue
         try:
             key, val = line.split(':')
             key = key.strip().lower()
         except ValueError:
-            return "wrong number of ':' in line %d" % line_num
+            err_msg = "wrong number of ':' in line %d" % line_num
+            raise ProfileException(err_msg)
         if key in 'email':
             profile[key] = val.strip()
         elif key in ['notify']:
@@ -337,20 +343,22 @@ def parse_profile(profilestring):
             if val in ['all', 'false', 'track']:
                 profile[key] = val
             else:
-                return "Notify options allowed: all/false/track"
+                err_msg = "Notify options allowed: all/false/track"
+                raise ProfileException(err_msg)
         elif key == 'track-files':
             profile[key].extend(util.split_at(',', val))
-        elif line.strip() != '':
-            return "wrong keyword in line %d" % line_num
+        else:
+            err_msg = "wrong keyword in line %d" % line_num
+            raise ProfileException(err_msg)
     return profile
 
 
 def check_profile(profile_file):
     "Attempts to read the acl file to see if it contains any errors. "
     try:
-        profile = open(profile_file, 'r').read()
+        profile = util.read_file(profile_file)
     except IOError:
-        return "no such file: '%s'" % profile_file
+        raise NoProfileException("profile not found: %r" % profile_file)
     return parse_profile(profile)
 
 
@@ -362,27 +370,8 @@ def read_profile(user, git_dir=None):
         cmd = 'git show HEAD:.%s.profile' % user
     profile, err, _ = exec_cmd(cmd, False)
     if err:
-        return "while executing `git show HEAD:.%s.profile`: %s" % (user,
-                                                                    err[:-1])
+        raise NoProfileException("profile not found: .%r.profile" % user)
     return parse_profile(profile)
-
-
-def file_in_path(file_name, paths):
-    "Given a list of paths it checks if the file is in one of the paths."
-    for path in paths:
-        if file_name.startswith(path):
-            return True
-    return False
-
-
-def file_match(file_name, names):
-    """Checks the name of the file matches anything in the list of
-    names. """
-    fname = pth.basename(file_name)
-    for name in names:
-        if fnmatch(fname, name):
-            return True
-    return False
 
 
 def load_repos():

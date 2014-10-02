@@ -45,15 +45,17 @@ setup(name='promus',
           'promus',
           'promus.command',
           'promus.core',
+          'promus_gui',
           ],
       platforms=['Darwin', 'Linux'],
-      scripts=['bin/promus'],
+      scripts=['bin/promus', 'bin/promus-gui'],
       install_requires=[
           'pysftp>=0.2.8',
           'rsa>=3.1.4',
           'pycrypto>=2.6.1',
           'ecdsa>=0.11',
           'python-dateutil>=2.2',
+          'flask>=0.10.1',
           ],
       package_data={
           'promus.paster': [

@@ -32,54 +32,48 @@ GIT_EDITOR=: if the command will not bring up an editor to modify the
 commit message.
 
 """
-
+from fnmatch import fnmatch
 from promus.command import exec_cmd
-from promus.core import git, user
-
-HOOK = 'pre_commit'
-MSG = 'PRE-COMMIT>> You do not have access to modify "%s"'
-MSG_ADMIN = 'PRE-COMMIT>> You must be an admin to modify "%s"'
+from promus.core import git
 
 
 def run(prs):
     """Function to execute when the pre-commit hook is called. """
     prs.attend_master()
     guest = prs.guest
-    access = guest.has_git_access(git.local_path())
-    user_files = ['.%s.profile' % x for x in guest.acl['user']]
+
+    authorizer = git.GitAuthorizer()
+    authorizer.load_users('~/.promus/users')
+    authorizer.read_acl(git.local_path())
+
     admin_files = ['.acl']
     files, _, _ = exec_cmd("git diff-index --cached --name-only HEAD")
+
+    denied = list()
+    exceptions = list()
     for mod_file in files.split('\n'):
         mod_file = mod_file.strip()
         if mod_file == '':
             continue
-        if mod_file in user_files:
-            if mod_file == '.%s.profile' % user or user in acl['admin']:
-                tmp = prc.check_profile("%s/.%s.profile" % (prc.local_path(),
-                                                            user))
-                if isinstance(tmp, str):
-                    prs.dismiss("PRE-COMMIT>> profile error: %s" % tmp, 1)
-                continue
-            else:
-                prs.dismiss(MSG % mod_file, 1)
-        
-        access = guest.has_git_access(None, mod_file, admin_files)
-
-        if mod_file in user_files:
-            if mod_file == '.%s.profile' % user or user in acl['admin']:
-                tmp = prc.check_profile("%s/.%s.profile" % (prc.local_path(),
-                                                            user))
-                if isinstance(tmp, str):
-                    prs.dismiss("PRE-COMMIT>> profile error: %s" % tmp, 1)
-                continue
-            else:
-                prs.dismiss(MSG % mod_file, 1)
-        has_access = check_names(acl, user, mod_file)
-        if has_access is True:
-            continue
-        if has_access is False:
-            prs.dismiss(MSG % mod_file, 1)
-        has_access = check_paths(acl, user, mod_file)
-        if has_access in [True, None]:
-            continue
-        prs.dismiss(MSG % mod_file, 1)
+        access = authorizer.has_access(guest, mod_file, admin_files)
+        if access is False:
+            denied.append(mod_file)
+        if mod_file == '.acl':
+            try:
+                git.check_acl(mod_file)
+            except git.ACLException as exception:
+                exceptions.append("ACLException: %r" % exception.message)
+        elif fnmatch(mod_file, '.*.profile'):
+            try:
+                git.check_profile(mod_file)
+            except git.ProfileException as exception:
+                exceptions.append("ProfileException: %r" % exception.message)
+    msg = ''
+    if denied:
+        msg += 'ACL does not allow you to modify:\n\n    '
+        msg += '\n    '.join(denied) + '\n'
+    if exceptions:
+        msg += 'Exceptions were caught:\n\n    '
+        msg += '\n    '.join(exceptions) + '\n'
+    if msg != '':
+        prs.dismiss('pre_commit', msg, 1)
