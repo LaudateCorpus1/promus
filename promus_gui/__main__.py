@@ -10,9 +10,24 @@ Use the option --help for more information.
 import argparse
 import textwrap
 import webbrowser
+import lexor
+import os.path as pth
 from flask import Flask
 from promus.__version__ import VERSION
-APP = Flask(__name__)
+
+BASE_DIR = pth.dirname(__file__)
+APP = Flask(
+    __name__,
+    static_folder=BASE_DIR+"/static"
+)
+
+
+@APP.route("/")
+def hello():
+    """Testing function. """
+    doc, _ = lexor.lexor(BASE_DIR+"/app/index.lex")
+    doc.lang = 'html'
+    return str(doc)
 
 
 def parse_options():
@@ -43,19 +58,13 @@ version:
     return argp.parse_args()
 
 
-@APP.route("/")
-def hello():
-    """Testing function. """
-    return "Hello World!"
-
-
 def run():
     """Run promus-gui from the command line. """
     arg = parse_options()
     port = arg.p
     host = arg.n
     webbrowser.open_new("http://%s:%d" % (host, port))
-    APP.run(host=host, port=port)
+    APP.run(host=host, port=port, debug=True)
 
 
 if __name__ == "__main__":

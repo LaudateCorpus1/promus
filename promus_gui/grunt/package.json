@@ -1,0 +1,25 @@
+{
+    "name": "promus-gui",
+    "description": "grunt file to build css and javascript files",
+    "version": "0.0.1",
+    "author": "Manuel Lopez",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jmlopez-rod/promus"
+    },
+    "license": {
+        "type": "BSD License",
+        "url": "../../../LICENSE.txt"
+    },
+    "devDependencies": {
+        "grunt": "~0.4.2",
+        "grunt-banner": "~0.2.0",
+        "grunt-contrib-less": "~0.9.0",
+        "grunt-csscomb": "~2.0.1",
+        "grunt-contrib-csslint": "~0.2.0",
+        "grunt-contrib-cssmin": "~0.7.0",
+        "grunt-contrib-concat": "~0.3.0",
+        "grunt-contrib-uglify": "~0.3.0",
+        "load-grunt-tasks": "~0.3.0"
+    }
+}

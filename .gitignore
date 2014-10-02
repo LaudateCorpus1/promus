@@ -1,3 +1,5 @@
+promus_gui/grunt/node_modules/*
+
 # distutil #
 ############
 dist
