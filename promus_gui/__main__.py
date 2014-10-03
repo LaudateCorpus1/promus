@@ -26,7 +26,6 @@ APP = Flask(
 def hello():
     """Testing function. """
     doc, _ = lexor.lexor(BASE_DIR+"/app/index.lex")
-    doc.lang = 'html'
     return str(doc)
 
 
@@ -34,7 +33,6 @@ def hello():
 def show_keys():
     """Testing function. """
     doc, _ = lexor.lexor(BASE_DIR+"/app/keys.lex")
-    doc.lang = 'html'
     return str(doc)
 
 

@@ -35,7 +35,7 @@ print '%s %s@%s - %s\n' % (id_key, master, host, alias)
 git_key = ssh.get_public_key(git_key)
 print '# GIT_KEY:\n'
 print '%s %s@%s - %s - git\n' % (git_key, master, host, alias)
-
+node.owner('#p1').after("**blah**", lang='lex', defaults={'inline':'on'})
 ?>
 
 %%%%
